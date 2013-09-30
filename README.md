@@ -3,7 +3,7 @@ go-webcam
 
 Golang webcam wrapper
 
-    import "github.com/blackjack/go-webcam"
+    import "github.com/blackjack/webcam"
     import "fmt"
 
     func main() {
