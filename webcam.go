@@ -7,10 +7,10 @@ import "unsafe"
 func GetImg(path string) []byte {
 	dev := C.CString(path)
 	defer C.free(unsafe.Pointer(dev))
-	var length C.int
 	buf := C.go_get_webcam_frame(dev)
 	result := C.GoBytes(unsafe.Pointer(buf.start), C.int(buf.length))
-	if buf.start != C.NULL {
+	if unsafe.Pointer(buf.start) != unsafe.Pointer(uintptr(0)) {
 		C.free(unsafe.Pointer(buf.start))
 	}
+	return result
 }
