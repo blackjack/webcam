@@ -1,7 +1,6 @@
 package webcam
 
 /*
-#cgo CFLAGS: -std=gnu99
 #include <stdint.h>
 #include <stdlib.h>
 #include "webcam.h"
@@ -13,6 +12,9 @@ import "os"
 
 type PixelFormat uint32
 
+// Struct that describes frame size supported by a webcam
+// For fixed sizes min and max values will be the same and 
+// step value will be equal to '0'
 type FrameSize struct {
   MinWidth uint32
   MaxWidth uint32
@@ -28,11 +30,17 @@ type buffer struct {
   length uint32
 }
 
+
+// Webcam object
 type Webcam struct {
   fd int
   buffers []buffer
 }
 
+
+// Open a webcam with a given path
+// Checks if device is a v4l2 device and if it is 
+// capable to stream video
 func Open(path string) (*Webcam,error) {
   cpath := C.CString(path)
   fd,err := C.openWebcam(cpath)
@@ -62,10 +70,9 @@ func Open(path string) (*Webcam,error) {
   return w, nil
 }
 
-func (w *Webcam) Fd() int {
-  return w.fd
-}
-
+// Returns image formats supported by the device.
+// Return value is a map with image format codes as keys and 
+// string descriptions as values
 func (w *Webcam) GetSupportedFormats() map[PixelFormat]string {
   result := make(map[PixelFormat]string)
   
@@ -79,6 +86,8 @@ func (w *Webcam) GetSupportedFormats() map[PixelFormat]string {
   return result
 }
 
+
+// Returns supported frame sizes for a given image format
 func (w *Webcam) GetSupportedFrameSizes(f PixelFormat) []FrameSize {
   result := make([]FrameSize,0)
   
@@ -99,6 +108,10 @@ func (w *Webcam) GetSupportedFrameSizes(f PixelFormat) []FrameSize {
 }
 
 
+// Sets desired image format and frame size
+// Note, that device driver can change that values.
+// Resulting values are returned by a function 
+// alongside with an error if any
 func (w *Webcam) SetImageFormat(f PixelFormat, width, height uint32) (PixelFormat,uint32,uint32,error) {
   
   code := C.uint32_t(f)
@@ -114,6 +127,7 @@ func (w *Webcam) SetImageFormat(f PixelFormat, width, height uint32) (PixelForma
   }
 }
 
+// Initialize the device
 func (w *Webcam) Init() error {
   
   buf_count := C.uint32_t(256)
@@ -158,6 +172,7 @@ func (w *Webcam) Init() error {
   return nil
 }
 
+// Command device to begin receiving data
 func (w *Webcam) StartStreaming() error {
   res, err := C.startStreaming(C.int(w.fd))
   if (res<0) {
@@ -167,6 +182,9 @@ func (w *Webcam) StartStreaming() error {
   }
 }
 
+// Read a single frame from the webcam
+// If frame cannot be read at the moment
+// function will return empty array
 func (w *Webcam) ReadFrame() ([]byte,error) {
   var index C.uint32_t
   var length C.uint32_t
@@ -190,6 +208,7 @@ func (w *Webcam) ReadFrame() ([]byte,error) {
   }
 }
 
+// Wait until frame could be read
 func (w *Webcam) WaitForFrame(timeout uint32) error {
   res, err := C.waitForFrame(C.int(w.fd),C.uint32_t(timeout))
   if (res<0) {
@@ -201,6 +220,7 @@ func (w *Webcam) WaitForFrame(timeout uint32) error {
   }
 }
 
+// Close the device
 func (w *Webcam) Close() error {
   for _, buffer := range w.buffers {
     res, err := C.mmapReleaseBuffer(buffer.start, C.uint32_t(buffer.length))
