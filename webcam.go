@@ -9,26 +9,10 @@ import "C"
 import "unsafe"
 import "errors"
 
-type PixelFormat uint32
-
-// Struct that describes frame size supported by a webcam
-// For fixed sizes min and max values will be the same and 
-// step value will be equal to '0'
-type FrameSize struct {
-  MinWidth uint32
-  MaxWidth uint32
-  StepWidth uint32
-
-  MinHeight uint32
-  MaxHeight uint32
-  StepHeight uint32
-}
-
 type buffer struct {
   start unsafe.Pointer
   length uint32
 }
-
 
 // Webcam object
 type Webcam struct {
