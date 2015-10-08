@@ -8,7 +8,6 @@ package webcam
 import "C"
 import "unsafe"
 import "errors"
-import "os"
 
 type PixelFormat uint32
 
