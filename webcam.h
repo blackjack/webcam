@@ -1,53 +1,23 @@
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <fcntl.h>
+#ifndef WEBCAM_H
+#define WEBCAM_H
 
-#include <assert.h>
-#include <pthread.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdbool.h>
 #include <stdint.h>
-#include <errno.h>
-#include <string.h>
-#include <unistd.h>
 
-#include <linux/videodev2.h>
+//wrappers to return some v4l2 C struct pointers CGO is not capable to understand
+void* newFrmSizeEnum();
 
-#define CLEAR(x) memset(&(x), 0, sizeof(x))
+//
+int openWebcam(char* device);
+int checkCapabilities(int fd, int* is_video_device, int* can_stream);
+int getPixelFormat(int fd, int index, uint32_t* code, char description[32]);
+int getFrameSize(int fd, int index, uint32_t code, uint32_t frameSize[6]);
+int setImageFormat(int fd, uint32_t* formatcode, uint32_t* width, uint32_t* height);
 
-/**
- * Buffer structure
- */
-typedef struct buffer {
-    uint8_t *start;
-    size_t  length;
-} buffer_t;
+int mmapRequestBuffers(int fd,uint32_t* buf_count);
+int mmapQueryBuffer(int fd,uint32_t index, uint32_t* length, void** start);
+int mmapDequeueBuffer(int fd, uint32_t* index, uint32_t* length);
+int mmapEnqueueBuffer(int fd,uint32_t index);
 
-/**
- * Webcam structure
- */
-typedef struct webcam {
-    char            *name;
-    int             fd;
-    buffer_t        *buffers;
-    uint8_t         nbuffers;
+int startStreaming(int fd);
 
-    buffer_t        frame;
-    pthread_t       thread;
-    pthread_mutex_t mtx_frame;
-
-    uint16_t        width;
-    uint16_t        height;
-    uint8_t         colorspace;
-
-    char            formats[16][5];
-    bool            streaming;
-} webcam_t;
-
-webcam_t *webcam_open(const char *dev);
-void webcam_close(webcam_t *w);
-void webcam_resize(webcam_t *w, uint16_t width, uint16_t height);
-void webcam_stream(webcam_t *w, bool flag);
-void webcam_grab(webcam_t *w, buffer_t *frame);
+#endif //WEBCAM_H
