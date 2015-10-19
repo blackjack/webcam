@@ -32,7 +32,7 @@ For more detailed example see [examples folder](https://github.com/blackjack/web
 
 ## Roadmap
 
-The library is under development so possible API changes can still happen. Currently library supports streaming
+The library is still under development so API changes can happen. Currently library supports streaming
 using only MMAP method, which should be sufficient for most of devices available on the market.
 Other streaming methods can be added in future (please create issue if you need this).
 
