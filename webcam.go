@@ -1,3 +1,6 @@
+// Library for working with webcams and other video capturing devices.
+// It depends entirely on v4l2 framework, thus will compile and work
+// only on Linux machine
 package webcam
 
 /*
@@ -52,9 +55,8 @@ func Open(path string) (*Webcam, error) {
 	return w, nil
 }
 
-// Returns image formats supported by the device.
-// Return value is a map with image format codes as keys and
-// string descriptions as values
+// Returns image formats supported by the device alongside with
+// their text description
 func (w *Webcam) GetSupportedFormats() map[PixelFormat]string {
 	result := make(map[PixelFormat]string)
 
@@ -106,8 +108,8 @@ func (w *Webcam) SetImageFormat(f PixelFormat, width, height uint32) (PixelForma
 	}
 }
 
-// Initialize the device
-func (w *Webcam) Init() error {
+// Start streaming process
+func (w *Webcam) StartStreaming() error {
 
 	buf_count := C.uint32_t(256)
 
@@ -148,17 +150,12 @@ func (w *Webcam) Init() error {
 		}
 	}
 
-	return nil
-}
-
-// Command device to begin receiving data
-func (w *Webcam) StartStreaming() error {
-	res, err := C.startStreaming(C.int(w.fd))
+	res, err = C.startStreaming(C.int(w.fd))
 	if res < 0 {
 		return err
-	} else {
-		return nil
 	}
+
+	return nil
 }
 
 // Read a single frame from the webcam

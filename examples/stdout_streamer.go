@@ -1,3 +1,9 @@
+// Example program that uses blakjack/webcam library
+// for working with V4L2 devices.
+// The application reads frames from device and writes them to stdout
+// If your device supports motion formats (e.g. H264 or MJPEG) you can
+// use it's output as a video stream.
+// Example usage: go run stdout_streamer.go | vlc -
 package main
 
 import "github.com/blackjack/webcam"
@@ -9,7 +15,7 @@ func readChoice(s string) int {
 	for true {
 		print(s)
 		_, err := fmt.Scanf("%d\n", &i)
-		if err != nil {
+		if err != nil || i < 1 {
 			println("Invalid input. Try again")
 		} else {
 			break
@@ -18,61 +24,49 @@ func readChoice(s string) int {
 	return i
 }
 
-func getFormatByNumber(m map[webcam.PixelFormat]string, n int) webcam.PixelFormat {
-	i := 1
-	for key := range m {
-		if i == n {
-			return key
-		}
-		i++
-	}
-	panic(fmt.Sprintf("Index out of range. N:%d, Len:%d", n, len(m)))
-}
-
 func main() {
 	cam, err := webcam.Open("/dev/video0")
 	if err != nil {
-		println(err.Error())
+		panic(err.Error())
 	}
 	defer cam.Close()
 
-	formats := cam.GetSupportedFormats()
+	format_desc := cam.GetSupportedFormats()
+	var formats []webcam.PixelFormat
+	for f := range format_desc {
+		formats = append(formats, f)
+	}
 
 	println("Available formats: ")
-	i := 0
-	for _, value := range formats {
-		i++
-		fmt.Printf("[%d] %s\n", i, value)
+	for i, value := range formats {
+		fmt.Fprintf(os.Stderr, "[%d] %s\n", i+1, format_desc[value])
 	}
 
 	choice := readChoice(fmt.Sprintf("Choose format [1-%d]: ", len(formats)))
-	format := getFormatByNumber(formats, choice)
+	format := formats[choice-1]
 
-	fmt.Printf("Supported frame sizes for format %s\n", formats[format])
+	fmt.Printf("Supported frame sizes for format %s\n", format_desc[format])
 	frames := cam.GetSupportedFrameSizes(format)
 	for _, value := range frames {
-		fmt.Printf("* %s\n", value.GetString())
+		fmt.Fprintf(os.Stderr, "* %s\n", value.GetString())
 	}
 	width := readChoice("Enter frame width: ")
 	height := readChoice("Enter frame height: ")
 
-	p, w, h, err := cam.SetImageFormat(format, uint32(width), uint32(height))
+	f, w, h, err := cam.SetImageFormat(format, uint32(width), uint32(height))
 
 	if err != nil {
-		println(err.Error())
+		panic(err.Error())
 	} else {
-		fmt.Printf("Resulting image format: %s (%dx%d)\n", formats[p], w, h)
+		fmt.Fprintf(os.Stderr, "Resulting image format: %s (%dx%d)\n", format_desc[f], w, h)
 	}
 
-	fmt.Println("Press Enter to start streaming")
+	println("Press Enter to start streaming")
 	fmt.Scanf("\n")
-	err = cam.Init()
-
-	if err != nil {
-		println(err.Error())
-	}
-
 	err = cam.StartStreaming()
+	if err != nil {
+		panic(err.Error())
+	}
 
 	timeout := uint32(5) //5 seconds
 	for cam.WaitForFrame(timeout) == nil {
@@ -80,8 +74,9 @@ func main() {
 		frame, err := cam.ReadFrame()
 		if len(frame) != 0 {
 			os.Stdout.Write(frame)
+			os.Stdout.Sync()
 		} else if err != nil {
-			break
+			panic(err.Error())
 		}
 	}
 }
