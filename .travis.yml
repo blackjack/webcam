@@ -1,0 +1,5 @@
+language: go
+
+go:
+  - tip
+  - v0.2
