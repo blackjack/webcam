@@ -45,7 +45,7 @@ func main() {
 	choice := readChoice(fmt.Sprintf("Choose format [1-%d]: ", len(formats)))
 	format := formats[choice-1]
 
-	fmt.Printf("Supported frame sizes for format %s\n", format_desc[format])
+	fmt.Fprintf(os.Stderr, "Supported frame sizes for format %s\n", format_desc[format])
 	frames := cam.GetSupportedFrameSizes(format)
 	for _, value := range frames {
 		fmt.Fprintf(os.Stderr, "* %s\n", value.GetString())
