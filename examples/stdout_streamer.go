@@ -9,6 +9,7 @@ package main
 import "github.com/blackjack/webcam"
 import "os"
 import "fmt"
+import "sort"
 
 func readChoice(s string) int {
 	var i int
@@ -22,6 +23,24 @@ func readChoice(s string) int {
 		}
 	}
 	return i
+}
+
+type FrameSizes []webcam.FrameSize
+
+func (slice FrameSizes) Len() int {
+	return len(slice)
+}
+
+//For sorting purposes
+func (slice FrameSizes) Less(i, j int) bool {
+	ls := slice[i].MaxWidth * slice[i].MaxHeight
+	rs := slice[j].MaxWidth * slice[j].MaxHeight
+	return ls < rs
+}
+
+//For sorting purposes
+func (slice FrameSizes) Swap(i, j int) {
+	slice[i], slice[j] = slice[j], slice[i]
 }
 
 func main() {
@@ -46,14 +65,16 @@ func main() {
 	format := formats[choice-1]
 
 	fmt.Fprintf(os.Stderr, "Supported frame sizes for format %s\n", format_desc[format])
-	frames := cam.GetSupportedFrameSizes(format)
-	for _, value := range frames {
-		fmt.Fprintf(os.Stderr, "* %s\n", value.GetString())
-	}
-	width := readChoice("Enter frame width: ")
-	height := readChoice("Enter frame height: ")
+	frames := FrameSizes(cam.GetSupportedFrameSizes(format))
+	sort.Sort(frames)
 
-	f, w, h, err := cam.SetImageFormat(format, uint32(width), uint32(height))
+	for i, value := range frames {
+		fmt.Fprintf(os.Stderr, "[%d] %s\n", i+1, value.GetString())
+	}
+	choice = readChoice(fmt.Sprintf("Choose format [1-%d]: ", len(frames)))
+	size := frames[choice-1]
+
+	f, w, h, err := cam.SetImageFormat(format, uint32(size.MaxWidth), uint32(size.MaxHeight))
 
 	if err != nil {
 		panic(err.Error())
@@ -69,10 +90,21 @@ func main() {
 	}
 
 	timeout := uint32(5) //5 seconds
-	for cam.WaitForFrame(timeout) == nil {
-		print(".")
+	for {
+		err = cam.WaitForFrame(timeout)
+
+		switch err.(type) {
+		case nil:
+		case *webcam.Timeout:
+			fmt.Fprint(os.Stderr, err.Error())
+			continue
+		default:
+			panic(err.Error())
+		}
+
 		frame, err := cam.ReadFrame()
 		if len(frame) != 0 {
+			print(".")
 			os.Stdout.Write(frame)
 			os.Stdout.Sync()
 		} else if err != nil {

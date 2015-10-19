@@ -9,7 +9,7 @@ It depends entirely on [V4L2](http://linuxtv.org/downloads/v4l-dvb-apis/) framew
 
 ```go
 import "github.com/blackjack/webcam"
-
+// ...
 cam, err := webcam.Open("/dev/video0") // Open webcam
 if err != nil { panic(err.Error()) }
 defer cam.Close()
@@ -18,13 +18,23 @@ defer cam.Close()
 // ...
 err = webcam.StartStreaming()
 if err != nil { panic(err.Error()) }
-for cam.WaitForFrame(5) == nil { // Wait with 5 seconds timeout
-  print(".")
+for {
+  err = cam.WaitForFrame(timeout)
+
+  switch err.(type) {
+  case nil:
+  case *webcam.Timeout:
+    fmt.Fprint(os.Stderr, err.Error())
+    continue
+  default:
+    panic(err.Error())
+  }
+
   frame, err := cam.ReadFrame()
   if len(frame) != 0 {
-    // Process received frame
+   // Process frame
   } else if err != nil {
-      panic(err.Error())
+    panic(err.Error())
   }
 }
 ```

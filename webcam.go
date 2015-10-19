@@ -190,7 +190,7 @@ func (w *Webcam) WaitForFrame(timeout uint32) error {
 	if res < 0 {
 		return err
 	} else if res == 0 {
-		return errors.New("Timeout occured")
+		return new(Timeout)
 	} else {
 		return nil
 	}
