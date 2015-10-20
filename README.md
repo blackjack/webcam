@@ -5,6 +5,12 @@
 This is a **go** library for working with webcams and other video capturing devices.
 It depends entirely on [V4L2](http://linuxtv.org/downloads/v4l-dvb-apis/) framework, thus will compile and work only on **Linux** machine.
 
+## Installation
+
+```console
+$ go get github.com/blackjack/webcam
+```
+
 ## Usage
 
 ```go
