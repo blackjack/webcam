@@ -22,7 +22,7 @@ defer cam.Close()
 // ...
 // Setup webcam image format and frame size here (see examples or documentation)
 // ...
-err = webcam.StartStreaming()
+err = cam.StartStreaming()
 if err != nil { panic(err.Error()) }
 for {
   err = cam.WaitForFrame(timeout)
