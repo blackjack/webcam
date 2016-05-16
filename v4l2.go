@@ -4,9 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"golang.org/x/sys/unix"
-	"os"
 	"unsafe"
-	"github.com/blackjack/webcam/ioctl"
+	"github.com/fabian-z/webcam/ioctl"
 )
 
 const (
