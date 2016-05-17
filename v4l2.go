@@ -3,9 +3,10 @@ package webcam
 import (
 	"bytes"
 	"encoding/binary"
+	"unsafe"
+
 	"github.com/blackjack/webcam/ioctl"
 	"golang.org/x/sys/unix"
-	"unsafe"
 )
 
 const (
@@ -164,7 +165,7 @@ func getPixelFormat(fd uintptr, index uint32) (code uint32, description string, 
 	return
 }
 
-func getFrameSize(fd uintptr, index uint32, code uint32) (frameSize [6]uint32, err error) {
+func getFrameSize(fd uintptr, index uint32, code uint32) (frameSize FrameSize, err error) {
 
 	frmsizeenum := &v4l2_frmsizeenum{}
 	frmsizeenum.index = index
@@ -186,12 +187,12 @@ func getFrameSize(fd uintptr, index uint32, code uint32) (frameSize [6]uint32, e
 			return
 		}
 
-		frameSize[0] = discrete.Width
-		frameSize[1] = discrete.Width
-		frameSize[2] = 0
-		frameSize[3] = discrete.Height
-		frameSize[4] = discrete.Height
-		frameSize[5] = 0
+		frameSize.MinWidth = discrete.Width
+		frameSize.MaxWidth = discrete.Width
+		frameSize.StepWidth = 0
+		frameSize.MinHeight = discrete.Height
+		frameSize.MaxHeight = discrete.Height
+		frameSize.StepHeight = 0
 
 	case V4L2_FRMSIZE_TYPE_CONTINUOUS:
 
@@ -203,17 +204,15 @@ func getFrameSize(fd uintptr, index uint32, code uint32) (frameSize [6]uint32, e
 			return
 		}
 
-		frameSize[0] = stepwise.Min_width
-		frameSize[1] = stepwise.Max_width
-		frameSize[2] = stepwise.Step_width
-		frameSize[3] = stepwise.Min_height
-		frameSize[4] = stepwise.Max_height
-		frameSize[5] = stepwise.Step_height
-
+		frameSize.MinWidth = stepwise.Min_width
+		frameSize.MaxWidth = stepwise.Max_width
+		frameSize.StepWidth = stepwise.Step_width
+		frameSize.MinHeight = stepwise.Min_height
+		frameSize.MaxHeight = stepwise.Max_height
+		frameSize.StepHeight = stepwise.Step_height
 	}
 
 	return
-
 }
 
 func setImageFormat(fd uintptr, formatcode *uint32, width *uint32, height *uint32) (err error) {

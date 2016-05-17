@@ -90,20 +90,12 @@ func (w *Webcam) GetSupportedFrameSizes(f PixelFormat) []FrameSize {
 	var err error
 
 	for index = 0; err == nil; index++ {
-		var sizes [6]uint32
-		sizes, err = getFrameSize(w.fd, index, uint32(f))
+		s, err := getFrameSize(w.fd, index, uint32(f))
 
 		if err != nil {
 			break
 		}
 
-		var s FrameSize
-		s.MinWidth = uint32(sizes[0])
-		s.MaxWidth = uint32(sizes[1])
-		s.StepWidth = uint32(sizes[2])
-		s.MinHeight = uint32(sizes[3])
-		s.MaxHeight = uint32(sizes[4])
-		s.StepHeight = uint32(sizes[5])
 		result = append(result, s)
 	}
 
