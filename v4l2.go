@@ -3,7 +3,7 @@ package webcam
 import (
 	"bytes"
 	"encoding/binary"
-	"github.com/fabian-z/webcam/ioctl"
+	"github.com/blackjack/webcam/ioctl"
 	"golang.org/x/sys/unix"
 	"unsafe"
 )
