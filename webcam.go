@@ -3,14 +3,13 @@
 // only on Linux machine
 package webcam
 
-/*
-#include <stdint.h>
-#include <stdlib.h>
-#include "webcam.h"
-*/
-import "C"
-import "unsafe"
-import "errors"
+import (
+	"errors"
+	"golang.org/x/sys/unix"
+	"os"
+	"reflect"
+	"unsafe"
+)
 
 type buffer struct {
 	start  unsafe.Pointer
@@ -19,7 +18,8 @@ type buffer struct {
 
 // Webcam object
 type Webcam struct {
-	fd      int
+	file    *os.File
+	fd      uintptr
 	buffers []buffer
 }
 
@@ -27,31 +27,31 @@ type Webcam struct {
 // Checks if device is a v4l2 device and if it is
 // capable to stream video
 func Open(path string) (*Webcam, error) {
-	cpath := C.CString(path)
-	fd, err := C.openWebcam(cpath)
-	C.free(unsafe.Pointer(cpath))
 
-	if fd < 0 {
+	file, err := os.OpenFile(path, unix.O_RDWR|unix.O_NONBLOCK, 0666)
+	fd := file.Fd()
+
+	if fd < 0 || err != nil {
 		return nil, err
 	}
 
-	var is_video_device, can_stream C.int
-	res, err := C.checkCapabilities(fd, &is_video_device, &can_stream)
+	supportsVideoCapture, supportsVideoStreaming, err := checkCapabilities(fd)
 
-	if res < 0 {
+	if err != nil {
 		return nil, err
 	}
 
-	if int(is_video_device) == 0 {
+	if !supportsVideoCapture {
 		return nil, errors.New("Not a video capture device")
 	}
 
-	if int(can_stream) == 0 {
+	if !supportsVideoStreaming {
 		return nil, errors.New("Device does not support the streaming I/O method")
 	}
 
 	w := new(Webcam)
-	w.fd = int(fd)
+	w.fd = fd
+	w.file = file
 	return w, nil
 }
 
@@ -62,13 +62,21 @@ func Open(path string) (*Webcam, error) {
 // See http://linuxtv.org/downloads/v4l-dvb-apis/vidioc-enum-framesizes.html
 // for more information
 func (w *Webcam) GetSupportedFormats() map[PixelFormat]string {
+
 	result := make(map[PixelFormat]string)
+	var err error
+	var code uint32
+	var desc string
+	var index uint32
 
-	var desc [32]C.char
-	var code C.uint32_t
+	for index = 0; err == nil; index++ {
+		code, desc, err = getPixelFormat(w.fd, index)
 
-	for index := 0; C.getPixelFormat(C.int(w.fd), C.int(index), &code, &desc[0]) == 0; index++ {
-		result[PixelFormat(code)] = C.GoString(&desc[0])
+		if err != nil {
+			break
+		}
+
+		result[PixelFormat(code)] = desc
 	}
 
 	return result
@@ -78,9 +86,17 @@ func (w *Webcam) GetSupportedFormats() map[PixelFormat]string {
 func (w *Webcam) GetSupportedFrameSizes(f PixelFormat) []FrameSize {
 	result := make([]FrameSize, 0)
 
-	var sizes [6]C.uint32_t
+	var index uint32
+	var err error
 
-	for index := 0; C.getFrameSize(C.int(w.fd), C.int(index), C.uint32_t(f), &sizes[0]) == 0; index++ {
+	for index = 0; err == nil; index++ {
+		var sizes [6]uint32
+		sizes, err = getFrameSize(w.fd, index, uint32(f))
+
+		if err != nil {
+			break
+		}
+
 		var s FrameSize
 		s.MinWidth = uint32(sizes[0])
 		s.MaxWidth = uint32(sizes[1])
@@ -100,63 +116,64 @@ func (w *Webcam) GetSupportedFrameSizes(f PixelFormat) []FrameSize {
 // alongside with an error if any
 func (w *Webcam) SetImageFormat(f PixelFormat, width, height uint32) (PixelFormat, uint32, uint32, error) {
 
-	code := C.uint32_t(f)
-	cw := C.uint32_t(width)
-	ch := C.uint32_t(height)
+	code := uint32(f)
+	cw := width
+	ch := height
 
-	res, err := C.setImageFormat(C.int(w.fd), &code, &cw, &ch)
-	if res < 0 {
+	err := setImageFormat(w.fd, &code, &width, &height)
+
+	if err != nil {
 		return 0, 0, 0, err
 	} else {
-		return PixelFormat(code), uint32(cw), uint32(ch), nil
+		return PixelFormat(code), cw, ch, nil
 	}
 }
 
 // Start streaming process
 func (w *Webcam) StartStreaming() error {
 
-	buf_count := C.uint32_t(256)
+	var buf_count uint32 = 256
 
-	res, err := C.mmapRequestBuffers(C.int(w.fd), &buf_count)
-	if res < 0 {
-		return err
+	err := mmapRequestBuffers(w.fd, &buf_count)
+
+	if err != nil {
+		return errors.New("Failed to map request buffers: " + string(err.Error()))
 	}
 
-	if uint32(buf_count) < 2 {
+	if buf_count < 2 {
 		return errors.New("Insufficient buffer memory")
 	}
 
 	w.buffers = make([]buffer, uint32(buf_count))
 
 	for index, buf := range w.buffers {
-		var length C.uint32_t
-		var start unsafe.Pointer
+		var length uint32
 
-		res, err := C.mmapQueryBuffer(C.int(w.fd), C.uint32_t(index), &length, &start)
+		start, err := mmapQueryBuffer(w.fd, uint32(index), &length)
 
-		if res < 0 {
-			if err != nil {
-				return err
-			} else {
-				return errors.New("Failed to map memory")
-			}
+		if err != nil {
+			return errors.New("Failed to map memory: " + string(err.Error()))
 		}
 
 		buf.start = start
-		buf.length = uint32(length)
+		buf.length = length
 		w.buffers[index] = buf
 	}
 
 	for index, _ := range w.buffers {
-		res, err = C.mmapEnqueueBuffer(C.int(w.fd), C.uint32_t(index))
-		if res < 0 {
-			return errors.New("Failed to enqueue buffer")
+
+		err := mmapEnqueueBuffer(w.fd, uint32(index))
+
+		if err != nil {
+			return errors.New("Failed to enqueue buffer: " + string(err.Error()))
 		}
+
 	}
 
-	res, err = C.startStreaming(C.int(w.fd))
-	if res < 0 {
-		return err
+	err = startStreaming(w.fd)
+
+	if err != nil {
+		return errors.New("Failed to start streaming: " + string(err.Error()))
 	}
 
 	return nil
@@ -164,36 +181,34 @@ func (w *Webcam) StartStreaming() error {
 
 // Read a single frame from the webcam
 // If frame cannot be read at the moment
-// function will return empty array
+// function will return empty slice
 func (w *Webcam) ReadFrame() ([]byte, error) {
-	var index C.uint32_t
-	var length C.uint32_t
-	res, err := C.mmapDequeueBuffer(C.int(w.fd), &index, &length)
+	var index uint32
+	var length uint32
 
-	if res < 0 {
+	err := mmapDequeueBuffer(w.fd, &index, &length)
+
+	if err != nil {
 		return nil, err
-	} else if res > 0 {
-		return nil, nil
 	}
 
 	buffer := w.buffers[int(index)]
-	result := C.GoBytes(buffer.start, C.int(length))
+	result := gobytes(buffer.start, int(length))
 
-	res, err = C.mmapEnqueueBuffer(C.int(w.fd), index)
+	err = mmapEnqueueBuffer(w.fd, index)
 
-	if res < 0 {
-		return result, err
-	} else {
-		return result, nil
-	}
+	return result, err
+
 }
 
 // Wait until frame could be read
 func (w *Webcam) WaitForFrame(timeout uint32) error {
-	res, err := C.waitForFrame(C.int(w.fd), C.uint32_t(timeout))
-	if res < 0 {
+
+	count, err := waitForFrame(w.fd, timeout)
+
+	if count < 0 || err != nil {
 		return err
-	} else if res == 0 {
+	} else if count == 0 {
 		return new(Timeout)
 	} else {
 		return nil
@@ -203,16 +218,21 @@ func (w *Webcam) WaitForFrame(timeout uint32) error {
 // Close the device
 func (w *Webcam) Close() error {
 	for _, buffer := range w.buffers {
-		res, err := C.mmapReleaseBuffer(buffer.start, C.uint32_t(buffer.length))
-		if res < 0 {
+		err := mmapReleaseBuffer(buffer.start, buffer.length)
+		if err != nil {
 			return err
 		}
 	}
 
-	res, err := C.closeWebcam(C.int(w.fd))
-	if res < 0 {
-		return err
-	}
+	err := w.file.Close()
 
-	return nil
+	return err
+}
+
+func gobytes(p unsafe.Pointer, n int) []byte {
+
+	h := reflect.SliceHeader{uintptr(p), n, n}
+	s := *(*[]byte)(unsafe.Pointer(&h))
+
+	return s
 }
