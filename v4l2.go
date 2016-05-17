@@ -3,9 +3,9 @@ package webcam
 import (
 	"bytes"
 	"encoding/binary"
+	"github.com/fabian-z/webcam/ioctl"
 	"golang.org/x/sys/unix"
 	"unsafe"
-	"github.com/fabian-z/webcam/ioctl"
 )
 
 const (
@@ -23,17 +23,16 @@ const (
 )
 
 var (
-	VIDIOC_QUERYCAP        = ioctl.IoR(uintptr('V'), 0, unsafe.Sizeof(v4l2_capability{}))
-	VIDIOC_ENUM_FMT        = ioctl.IoRW(uintptr('V'), 2, unsafe.Sizeof(v4l2_fmtdesc{}))
-	VIDIOC_S_FMT           = ioctl.IoRW(uintptr('V'), 5, unsafe.Sizeof(v4l2_format{}))
-	VIDIOC_REQBUFS         = ioctl.IoRW(uintptr('V'), 8, unsafe.Sizeof(v4l2_requestbuffers{}))
-	VIDIOC_QUERYBUF        = ioctl.IoRW(uintptr('V'), 9, unsafe.Sizeof(v4l2_buffer{}))
-	VIDIOC_QBUF            = ioctl.IoRW(uintptr('V'), 15, unsafe.Sizeof(v4l2_buffer{}))
-	VIDIOC_DQBUF           = ioctl.IoRW(uintptr('V'), 17, unsafe.Sizeof(v4l2_buffer{}))
+	VIDIOC_QUERYCAP = ioctl.IoR(uintptr('V'), 0, unsafe.Sizeof(v4l2_capability{}))
+	VIDIOC_ENUM_FMT = ioctl.IoRW(uintptr('V'), 2, unsafe.Sizeof(v4l2_fmtdesc{}))
+	VIDIOC_S_FMT    = ioctl.IoRW(uintptr('V'), 5, unsafe.Sizeof(v4l2_format{}))
+	VIDIOC_REQBUFS  = ioctl.IoRW(uintptr('V'), 8, unsafe.Sizeof(v4l2_requestbuffers{}))
+	VIDIOC_QUERYBUF = ioctl.IoRW(uintptr('V'), 9, unsafe.Sizeof(v4l2_buffer{}))
+	VIDIOC_QBUF     = ioctl.IoRW(uintptr('V'), 15, unsafe.Sizeof(v4l2_buffer{}))
+	VIDIOC_DQBUF    = ioctl.IoRW(uintptr('V'), 17, unsafe.Sizeof(v4l2_buffer{}))
 	//sizeof int32
 	VIDIOC_STREAMON        = ioctl.IoW(uintptr('V'), 18, 4)
 	VIDIOC_ENUM_FRAMESIZES = ioctl.IoRW(uintptr('V'), 74, unsafe.Sizeof(v4l2_frmsizeenum{}))
-
 )
 
 type v4l2_capability struct {
@@ -371,13 +370,19 @@ func waitForFrame(fd uintptr, timeout uint32) (count int, err error) {
 
 	for {
 
-		fds := &unix.FdSet{}
-		fds.Bits[0] = int64(fd)
+		fds := &FdSet{}
+		fds.Set(fd)
 
 		tv := &unix.Timeval{}
 		tv.Sec = int64(timeout)
 
-		count, err = unix.Select(int(fd)+1, fds, nil, nil, tv)
+		countReturn, _, errno := unix.Syscall6(unix.SYS_SELECT, uintptr(fd+1), uintptr(unsafe.Pointer(fds)), uintptr(0), uintptr(0), uintptr(unsafe.Pointer(tv)), 0)
+
+		count = int(countReturn)
+
+		if errno != 0 {
+			err = errno
+		}
 
 		if count < 0 {
 
@@ -404,4 +409,25 @@ func CToGoString(c []byte) string {
 		n = i
 	}
 	return string(c[:n+1])
+}
+
+//unix.Fdset produces wrong results (visible in strace)
+
+const (
+	FD_BITS    = uintptr(unsafe.Sizeof(0) * 8)
+	FD_SETSIZE = 1024
+)
+
+type FdSet struct {
+	bits [FD_SETSIZE / FD_BITS]int32
+}
+
+func (fds *FdSet) Set(fd uintptr) {
+	fdmask := uint(1) << (uint32(fd) % uint32(FD_BITS))
+	fds.bits[fd/FD_BITS] |= int32(fdmask)
+}
+
+func (fds *FdSet) IsSet(fd uintptr) bool {
+	fdmask := uint32(1) << (uint32(fd) % uint32(FD_BITS))
+	return (fds.bits[fd/FD_BITS] & int32(fdmask)) != 0
 }
