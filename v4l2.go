@@ -79,7 +79,8 @@ type v4l2_frmsize_stepwise struct {
 
 type v4l2_format struct {
 	_type uint32
-	union [204]uint8
+	_     [4]byte
+	union [200]uint8
 }
 
 type v4l2_pix_format struct {
