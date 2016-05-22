@@ -34,6 +34,8 @@ var (
 	//sizeof int32
 	VIDIOC_STREAMON        = ioctl.IoW(uintptr('V'), 18, 4)
 	VIDIOC_ENUM_FRAMESIZES = ioctl.IoRW(uintptr('V'), 74, unsafe.Sizeof(v4l2_frmsizeenum{}))
+	__p                    = unsafe.Pointer(uintptr(0))
+	NativeByteOrder        = getNativeByteOrder()
 )
 
 type v4l2_capability struct {
@@ -77,10 +79,15 @@ type v4l2_frmsize_stepwise struct {
 	Step_height uint32
 }
 
+//Hack to make go compiler properly align union
+type v4l2_format_aligned_union struct {
+	data [200 - unsafe.Sizeof(__p)]byte
+	_    unsafe.Pointer
+}
+
 type v4l2_format struct {
 	_type uint32
-	_     [4]byte
-	union [200]uint8
+	union v4l2_format_aligned_union
 }
 
 type v4l2_pix_format struct {
@@ -182,7 +189,7 @@ func getFrameSize(fd uintptr, index uint32, code uint32) (frameSize FrameSize, e
 
 	case V4L2_FRMSIZE_TYPE_DISCRETE:
 		discrete := &v4l2_frmsize_discrete{}
-		err = binary.Read(bytes.NewBuffer(frmsizeenum.union[:]), binary.LittleEndian, discrete)
+		err = binary.Read(bytes.NewBuffer(frmsizeenum.union[:]), NativeByteOrder, discrete)
 
 		if err != nil {
 			return
@@ -199,7 +206,7 @@ func getFrameSize(fd uintptr, index uint32, code uint32) (frameSize FrameSize, e
 
 	case V4L2_FRMSIZE_TYPE_STEPWISE:
 		stepwise := &v4l2_frmsize_stepwise{}
-		err = binary.Read(bytes.NewBuffer(frmsizeenum.union[:]), binary.LittleEndian, stepwise)
+		err = binary.Read(bytes.NewBuffer(frmsizeenum.union[:]), NativeByteOrder, stepwise)
 
 		if err != nil {
 			return
@@ -230,13 +237,13 @@ func setImageFormat(fd uintptr, formatcode *uint32, width *uint32, height *uint3
 	}
 
 	pixbytes := &bytes.Buffer{}
-	err = binary.Write(pixbytes, binary.LittleEndian, pix)
+	err = binary.Write(pixbytes, NativeByteOrder, pix)
 
 	if err != nil {
 		return
 	}
 
-	copy(format.union[:], pixbytes.Bytes())
+	copy(format.union.data[:], pixbytes.Bytes())
 
 	err = ioctl.Ioctl(fd, VIDIOC_S_FMT, uintptr(unsafe.Pointer(format)))
 
@@ -245,7 +252,7 @@ func setImageFormat(fd uintptr, formatcode *uint32, width *uint32, height *uint3
 	}
 
 	pixReverse := &v4l2_pix_format{}
-	err = binary.Read(bytes.NewBuffer(format.union[:]), binary.LittleEndian, pixReverse)
+	err = binary.Read(bytes.NewBuffer(format.union.data[:]), NativeByteOrder, pixReverse)
 
 	if err != nil {
 		return
@@ -293,7 +300,7 @@ func mmapQueryBuffer(fd uintptr, index uint32, length *uint32) (start unsafe.Poi
 	}
 
 	var offset uint32
-	err = binary.Read(bytes.NewBuffer(buffer.union[:]), binary.LittleEndian, &offset)
+	err = binary.Read(bytes.NewBuffer(buffer.union[:]), NativeByteOrder, &offset)
 
 	if err != nil {
 		return
@@ -398,6 +405,18 @@ func waitForFrame(fd uintptr, timeout uint32) (count int, err error) {
 
 	}
 
+}
+
+func getNativeByteOrder() binary.ByteOrder {
+	var i int32 = 0x01020304
+	u := unsafe.Pointer(&i)
+	pb := (*byte)(u)
+	b := *pb
+	if b == 0x04 {
+		return binary.LittleEndian
+	} else {
+		return binary.BigEndian
+	}
 }
 
 func CToGoString(c []byte) string {
