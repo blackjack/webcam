@@ -293,7 +293,7 @@ func mmapQueryBuffer(fd uintptr, index uint32, length *uint32) (start unsafe.Poi
 	}
 
 	var offset uint32
-	err = binary.Read(bytes.NewBuffer(buffer.union[:]), binary.LittleEndian, offset)
+	err = binary.Read(bytes.NewBuffer(buffer.union[:]), binary.LittleEndian, &offset)
 
 	if err != nil {
 		return
