@@ -373,16 +373,17 @@ func startStreaming(fd uintptr) (err error) {
 
 }
 
-func waitForFrame(fd uintptr, timeoutNanosec int64) (count int, err error) {
+func waitForFrame(fd uintptr, timeout uint32) (count int, err error) {
 
 	for {
 
 		fds := &FdSet{}
 		fds.Set(fd)
 
-		tv := unix.NsecToTimeval(timeoutNanosec)
+		tv := &unix.Timeval{}
+		tv.Sec = int64(timeout)
 
-		countReturn, _, errno := unix.Syscall6(unix.SYS_SELECT, uintptr(fd+1), uintptr(unsafe.Pointer(fds)), uintptr(0), uintptr(0), uintptr(unsafe.Pointer(&tv)), 0)
+		countReturn, _, errno := unix.Syscall6(unix.SYS_SELECT, uintptr(fd+1), uintptr(unsafe.Pointer(fds)), uintptr(0), uintptr(0), uintptr(unsafe.Pointer(tv)), 0)
 
 		count = int(countReturn)
 

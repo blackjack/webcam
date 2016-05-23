@@ -25,7 +25,6 @@ defer cam.Close()
 err = cam.StartStreaming()
 if err != nil { panic(err.Error()) }
 for {
-  var timeout int64 = 1e9 // 1 second
   err = cam.WaitForFrame(timeout)
 
   switch err.(type) {

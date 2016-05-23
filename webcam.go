@@ -194,9 +194,9 @@ func (w *Webcam) ReadFrame() ([]byte, error) {
 }
 
 // Wait until frame could be read
-func (w *Webcam) WaitForFrame(timeoutNanosec int64) error {
+func (w *Webcam) WaitForFrame(timeout uint32) error {
 
-	count, err := waitForFrame(w.fd, timeoutNanosec)
+	count, err := waitForFrame(w.fd, timeout)
 
 	if count < 0 || err != nil {
 		return err
