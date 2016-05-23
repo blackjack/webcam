@@ -89,7 +89,7 @@ func main() {
 		panic(err.Error())
 	}
 
-	timeout := uint32(5) //5 seconds
+	var timeout int64 = 1e9 // 1 second
 	for {
 		err = cam.WaitForFrame(timeout)
 
