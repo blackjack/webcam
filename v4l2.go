@@ -380,8 +380,10 @@ func waitForFrame(fd uintptr, timeout uint32) (count int, err error) {
 		fds := &FdSet{}
 		fds.Set(fd)
 
-		tv := &unix.Timeval{}
-		tv.Sec = int64(timeout)
+		var oneSecInNsec int64 = 1e9
+		timeoutNsec := int64(timeout)*oneSecInNsec
+		nativeTimeVal := unix.NsecToTimeval(timeoutNsec)
+		tv := &nativeTimeVal
 
 		countReturn, _, errno := unix.Syscall6(unix.SYS_SELECT, uintptr(fd+1), uintptr(unsafe.Pointer(fds)), uintptr(0), uintptr(0), uintptr(unsafe.Pointer(tv)), 0)
 
