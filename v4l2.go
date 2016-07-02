@@ -361,37 +361,21 @@ func startStreaming(fd uintptr) (err error) {
 func waitForFrame(fd uintptr, timeout uint32) (count int, err error) {
 
 	for {
-
-		fds := &FdSet{}
-		fds.Set(fd)
+		fds := &unix.FdSet{}
+		fdmask := uint(1) << (uint32(fd) % uint32(FD_BITS))
+		fds.Bits[fd/FD_BITS] |= int64(fdmask)
 
 		var oneSecInNsec int64 = 1e9
 		timeoutNsec := int64(timeout) * oneSecInNsec
 		nativeTimeVal := unix.NsecToTimeval(timeoutNsec)
 		tv := &nativeTimeVal
 
-		countReturn, _, errno := unix.Syscall6(unix.SYS_SELECT, uintptr(fd+1), uintptr(unsafe.Pointer(fds)), uintptr(0), uintptr(0), uintptr(unsafe.Pointer(tv)), 0)
+		count, err = unix.Select(int(fd+1), fds, nil, nil, tv)
 
-		count = int(countReturn)
-
-		if errno != 0 {
-			err = errno
+		if count < 0 && err == unix.EINTR {
+			continue
 		}
-
-		if count < 0 {
-
-			if err == unix.EINTR {
-				continue
-			}
-
-			return
-
-		}
-
-		return
-
 	}
-
 }
 
 func getNativeByteOrder() binary.ByteOrder {
@@ -417,23 +401,7 @@ func CToGoString(c []byte) string {
 	return string(c[:n+1])
 }
 
-//unix.Fdset produces wrong results (visible in strace)
-
 const (
 	FD_BITS    = uintptr(unsafe.Sizeof(0) * 8)
 	FD_SETSIZE = 1024
 )
-
-type FdSet struct {
-	bits [FD_SETSIZE / FD_BITS]int32
-}
-
-func (fds *FdSet) Set(fd uintptr) {
-	fdmask := uint(1) << (uint32(fd) % uint32(FD_BITS))
-	fds.bits[fd/FD_BITS] |= int32(fdmask)
-}
-
-func (fds *FdSet) IsSet(fd uintptr) bool {
-	fdmask := uint32(1) << (uint32(fd) % uint32(FD_BITS))
-	return (fds.bits[fd/FD_BITS] & int32(fdmask)) != 0
-}
