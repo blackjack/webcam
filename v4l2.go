@@ -122,7 +122,7 @@ type v4l2_buffer struct {
 	timecode  v4l2_timecode
 	sequence  uint32
 	memory    uint32
-	union     [8]uint8
+	union     [unsafe.Sizeof(__p)]uint8
 	length    uint32
 	reserved2 uint32
 	reserved  uint32
@@ -381,7 +381,7 @@ func waitForFrame(fd uintptr, timeout uint32) (count int, err error) {
 		fds.Set(fd)
 
 		var oneSecInNsec int64 = 1e9
-		timeoutNsec := int64(timeout)*oneSecInNsec
+		timeoutNsec := int64(timeout) * oneSecInNsec
 		nativeTimeVal := unix.NsecToTimeval(timeoutNsec)
 		tv := &nativeTimeVal
 
