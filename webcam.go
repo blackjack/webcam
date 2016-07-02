@@ -11,16 +11,11 @@ import (
 	"unsafe"
 )
 
-type buffer struct {
-	start  unsafe.Pointer
-	length uint32
-}
-
 // Webcam object
 type Webcam struct {
 	file    *os.File
 	fd      uintptr
-	buffers []buffer
+	buffers [][]byte
 }
 
 // Open a webcam with a given path
@@ -136,20 +131,17 @@ func (w *Webcam) StartStreaming() error {
 		return errors.New("Insufficient buffer memory")
 	}
 
-	w.buffers = make([]buffer, uint32(buf_count))
-
-	for index, buf := range w.buffers {
+	w.buffers = make([][]byte, buf_count, buf_count)
+	for index, _ := range w.buffers {
 		var length uint32
 
-		start, err := mmapQueryBuffer(w.fd, uint32(index), &length)
+		buffer, err := mmapQueryBuffer(w.fd, uint32(index), &length)
 
 		if err != nil {
 			return errors.New("Failed to map memory: " + string(err.Error()))
 		}
 
-		buf.start = start
-		buf.length = length
-		w.buffers[index] = buf
+		w.buffers[index] = buffer
 	}
 
 	for index, _ := range w.buffers {
@@ -184,8 +176,7 @@ func (w *Webcam) ReadFrame() ([]byte, error) {
 		return nil, err
 	}
 
-	buffer := w.buffers[int(index)]
-	result := gobytes(buffer.start, int(length))
+	result := w.buffers[int(index)][:length]
 
 	err = mmapEnqueueBuffer(w.fd, index)
 
@@ -210,7 +201,7 @@ func (w *Webcam) WaitForFrame(timeout uint32) error {
 // Close the device
 func (w *Webcam) Close() error {
 	for _, buffer := range w.buffers {
-		err := mmapReleaseBuffer(buffer.start, buffer.length)
+		err := mmapReleaseBuffer(buffer)
 		if err != nil {
 			return err
 		}

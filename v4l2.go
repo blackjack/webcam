@@ -285,39 +285,31 @@ func mmapRequestBuffers(fd uintptr, buf_count *uint32) (err error) {
 
 }
 
-func mmapQueryBuffer(fd uintptr, index uint32, length *uint32) (start unsafe.Pointer, err error) {
+func mmapQueryBuffer(fd uintptr, index uint32, length *uint32) (buffer []byte, err error) {
 
-	buffer := &v4l2_buffer{}
+	req := &v4l2_buffer{}
 
-	buffer._type = V4L2_BUF_TYPE_VIDEO_CAPTURE
-	buffer.memory = V4L2_MEMORY_MMAP
-	buffer.index = index
+	req._type = V4L2_BUF_TYPE_VIDEO_CAPTURE
+	req.memory = V4L2_MEMORY_MMAP
+	req.index = index
 
-	err = ioctl.Ioctl(fd, VIDIOC_QUERYBUF, uintptr(unsafe.Pointer(buffer)))
+	err = ioctl.Ioctl(fd, VIDIOC_QUERYBUF, uintptr(unsafe.Pointer(req)))
 
 	if err != nil {
 		return
 	}
 
 	var offset uint32
-	err = binary.Read(bytes.NewBuffer(buffer.union[:]), NativeByteOrder, &offset)
+	err = binary.Read(bytes.NewBuffer(req.union[:]), NativeByteOrder, &offset)
 
 	if err != nil {
 		return
 	}
 
-	*length = buffer.length
+	*length = req.length
 
-	returnPointer, _, errno := unix.Syscall6(unix.SYS_MMAP, 0, uintptr(buffer.length), unix.PROT_READ|unix.PROT_WRITE, unix.MAP_SHARED, fd, uintptr(offset))
-
-	start = unsafe.Pointer(returnPointer)
-
-	if errno != 0 {
-		err = errno
-	}
-
+	buffer, err = unix.Mmap(int(fd), int64(offset), int(req.length), unix.PROT_READ|unix.PROT_WRITE, unix.MAP_SHARED)
 	return
-
 }
 
 func mmapDequeueBuffer(fd uintptr, index *uint32, length *uint32) (err error) {
@@ -353,16 +345,9 @@ func mmapEnqueueBuffer(fd uintptr, index uint32) (err error) {
 
 }
 
-func mmapReleaseBuffer(start unsafe.Pointer, length uint32) (err error) {
-
-	_, _, errno := unix.Syscall(unix.SYS_MUNMAP, uintptr(start), uintptr(length), uintptr(0))
-
-	if errno != 0 {
-		err = errno
-	}
-
+func mmapReleaseBuffer(buffer []byte) (err error) {
+	err = unix.Munmap(buffer)
 	return
-
 }
 
 func startStreaming(fd uintptr) (err error) {
