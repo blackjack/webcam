@@ -358,12 +358,16 @@ func startStreaming(fd uintptr) (err error) {
 
 }
 
+func FD_SET(p *unix.FdSet, i int) {
+	var l int = int(len(p.Bits))
+	p.Bits[i/l] |= 1 << uintptr(i%l)
+}
+
 func waitForFrame(fd uintptr, timeout uint32) (count int, err error) {
 
 	for {
 		fds := &unix.FdSet{}
-		fdmask := uint(1) << (uint32(fd) % uint32(FD_BITS))
-		fds.Bits[fd/FD_BITS] |= int64(fdmask)
+		FD_SET(fds, int(fd))
 
 		var oneSecInNsec int64 = 1e9
 		timeoutNsec := int64(timeout) * oneSecInNsec
@@ -375,7 +379,9 @@ func waitForFrame(fd uintptr, timeout uint32) (count int, err error) {
 		if count < 0 && err == unix.EINTR {
 			continue
 		}
+		return
 	}
+
 }
 
 func getNativeByteOrder() binary.ByteOrder {
@@ -400,8 +406,3 @@ func CToGoString(c []byte) string {
 	}
 	return string(c[:n+1])
 }
-
-const (
-	FD_BITS    = uintptr(unsafe.Sizeof(0) * 8)
-	FD_SETSIZE = 1024
-)
