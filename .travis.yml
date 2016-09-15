@@ -2,4 +2,5 @@ language: go
 
 go:
   - tip
-  - v0.2
+  - 1.7
+  - 1.3
