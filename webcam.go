@@ -50,6 +50,10 @@ func Open(path string) (*Webcam, error) {
 	return w, nil
 }
 
+func (w *Webcam) File() *os.File {
+	return w.file
+}
+
 // Returns image formats supported by the device alongside with
 // their text description
 // Not that this function is somewhat experimental. Frames are not ordered in
