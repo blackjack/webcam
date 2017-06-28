@@ -25,6 +25,7 @@ const (
 
 const (
 	V4L2_CID_BASE               uint32 = 0x00980900
+	V4L2_CID_AUTO_WHITE_BALANCE uint32 = V4L2_CID_BASE + 12
 	V4L2_CID_PRIVATE_BASE       uint32 = 0x08000000
 )
 

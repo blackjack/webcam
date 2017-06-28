@@ -223,6 +223,15 @@ func (w *Webcam) Close() error {
 	return err
 }
 
+// Sets automatic white balance correction
+func (w *Webcam) SetAutoWhiteBalance(val bool) error {
+	v := int32(0)
+	if val {
+		v = 1
+	}
+	return setControl(w.fd, V4L2_CID_AUTO_WHITE_BALANCE, v)
+}
+
 func gobytes(p unsafe.Pointer, n int) []byte {
 
 	h := reflect.SliceHeader{uintptr(p), n, n}
