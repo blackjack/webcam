@@ -23,14 +23,21 @@ const (
 	V4L2_FRMSIZE_TYPE_STEPWISE   uint32 = 3
 )
 
+const (
+	V4L2_CID_BASE               uint32 = 0x00980900
+	V4L2_CID_PRIVATE_BASE       uint32 = 0x08000000
+)
+
 var (
-	VIDIOC_QUERYCAP = ioctl.IoR(uintptr('V'), 0, unsafe.Sizeof(v4l2_capability{}))
-	VIDIOC_ENUM_FMT = ioctl.IoRW(uintptr('V'), 2, unsafe.Sizeof(v4l2_fmtdesc{}))
-	VIDIOC_S_FMT    = ioctl.IoRW(uintptr('V'), 5, unsafe.Sizeof(v4l2_format{}))
-	VIDIOC_REQBUFS  = ioctl.IoRW(uintptr('V'), 8, unsafe.Sizeof(v4l2_requestbuffers{}))
-	VIDIOC_QUERYBUF = ioctl.IoRW(uintptr('V'), 9, unsafe.Sizeof(v4l2_buffer{}))
-	VIDIOC_QBUF     = ioctl.IoRW(uintptr('V'), 15, unsafe.Sizeof(v4l2_buffer{}))
-	VIDIOC_DQBUF    = ioctl.IoRW(uintptr('V'), 17, unsafe.Sizeof(v4l2_buffer{}))
+	VIDIOC_QUERYCAP  = ioctl.IoR(uintptr('V'), 0, unsafe.Sizeof(v4l2_capability{}))
+	VIDIOC_ENUM_FMT  = ioctl.IoRW(uintptr('V'), 2, unsafe.Sizeof(v4l2_fmtdesc{}))
+	VIDIOC_S_FMT     = ioctl.IoRW(uintptr('V'), 5, unsafe.Sizeof(v4l2_format{}))
+	VIDIOC_REQBUFS   = ioctl.IoRW(uintptr('V'), 8, unsafe.Sizeof(v4l2_requestbuffers{}))
+	VIDIOC_QUERYBUF  = ioctl.IoRW(uintptr('V'), 9, unsafe.Sizeof(v4l2_buffer{}))
+	VIDIOC_QBUF      = ioctl.IoRW(uintptr('V'), 15, unsafe.Sizeof(v4l2_buffer{}))
+	VIDIOC_DQBUF     = ioctl.IoRW(uintptr('V'), 17, unsafe.Sizeof(v4l2_buffer{}))
+	VIDIOC_S_CTRL    = ioctl.IoRW(uintptr('V'), 28, unsafe.Sizeof(v4l2_control{}))
+	VIDIOC_QUERYCTRL = ioctl.IoRW(uintptr('V'), 36, unsafe.Sizeof(v4l2_queryctrl{}))
 	//sizeof int32
 	VIDIOC_STREAMON        = ioctl.IoW(uintptr('V'), 18, 4)
 	VIDIOC_STREAMOFF       = ioctl.IoW(uintptr('V'), 19, 4)
@@ -137,6 +144,23 @@ type v4l2_timecode struct {
 	minutes  uint8
 	hours    uint8
 	userbits [4]uint8
+}
+
+type v4l2_queryctrl struct {
+	id            uint32
+	_type         uint32
+	name          [32]uint8
+	minimum       int32
+	maximum       int32
+	step          int32
+	default_value int32
+	flags         uint32
+	reserved      [2]uint32
+}
+
+type v4l2_control struct {
+	id    uint32
+	value int32
 }
 
 func checkCapabilities(fd uintptr) (supportsVideoCapture bool, supportsVideoStreaming bool, err error) {
@@ -391,6 +415,33 @@ func waitForFrame(fd uintptr, timeout uint32) (count int, err error) {
 		return
 	}
 
+}
+
+func setControl(fd uintptr, id uint32, val int32) error {
+	ctrl := &v4l2_control{}
+	ctrl.id = id
+	ctrl.value = val
+	return ioctl.Ioctl(fd, VIDIOC_S_CTRL, uintptr(unsafe.Pointer(ctrl)))
+}
+
+func getControls(fd uintptr) map[uint32]string {
+	query := &v4l2_queryctrl{}
+	var controls map[uint32]string
+	var err error
+	for query.id = V4L2_CID_BASE; err == nil; query.id++ {
+		err = ioctl.Ioctl(fd, VIDIOC_QUERYCTRL, uintptr(unsafe.Pointer(query)))
+		if err == nil {
+			controls[query.id] = CToGoString(query.name[:])
+		}
+	}
+	err = nil
+	for query.id = V4L2_CID_PRIVATE_BASE; err == nil; query.id++ {
+		err = ioctl.Ioctl(fd, VIDIOC_QUERYCTRL, uintptr(unsafe.Pointer(query)))
+		if err == nil {
+			controls[query.id] = CToGoString(query.name[:])
+		}
+	}
+	return controls
 }
 
 func getNativeByteOrder() binary.ByteOrder {
