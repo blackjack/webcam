@@ -33,6 +33,7 @@ var (
 	VIDIOC_DQBUF    = ioctl.IoRW(uintptr('V'), 17, unsafe.Sizeof(v4l2_buffer{}))
 	//sizeof int32
 	VIDIOC_STREAMON        = ioctl.IoW(uintptr('V'), 18, 4)
+	VIDIOC_STREAMOFF       = ioctl.IoW(uintptr('V'), 19, 4)
 	VIDIOC_ENUM_FRAMESIZES = ioctl.IoRW(uintptr('V'), 74, unsafe.Sizeof(v4l2_frmsizeenum{}))
 	__p                    = unsafe.Pointer(uintptr(0))
 	NativeByteOrder        = getNativeByteOrder()
@@ -354,6 +355,14 @@ func startStreaming(fd uintptr) (err error) {
 
 	var uintPointer uint32 = V4L2_BUF_TYPE_VIDEO_CAPTURE
 	err = ioctl.Ioctl(fd, VIDIOC_STREAMON, uintptr(unsafe.Pointer(&uintPointer)))
+	return
+
+}
+
+func stopStreaming(fd uintptr) (err error) {
+
+	var uintPointer uint32 = V4L2_BUF_TYPE_VIDEO_CAPTURE
+	err = ioctl.Ioctl(fd, VIDIOC_STREAMOFF, uintptr(unsafe.Pointer(&uintPointer)))
 	return
 
 }

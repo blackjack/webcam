@@ -198,6 +198,17 @@ func (w *Webcam) WaitForFrame(timeout uint32) error {
 	}
 }
 
+func (w *Webcam) StopStreaming() error {
+	for _, buffer := range w.buffers {
+		err := mmapReleaseBuffer(buffer)
+		if err != nil {
+			return err
+		}
+	}
+
+	return stopStreaming(w.fd)
+}
+
 // Close the device
 func (w *Webcam) Close() error {
 	for _, buffer := range w.buffers {
