@@ -202,6 +202,17 @@ func (w *Webcam) WaitForFrame(timeout uint32) error {
 	}
 }
 
+func (w *Webcam) StopStreaming() error {
+	for _, buffer := range w.buffers {
+		err := mmapReleaseBuffer(buffer)
+		if err != nil {
+			return err
+		}
+	}
+
+	return stopStreaming(w.fd)
+}
+
 // Close the device
 func (w *Webcam) Close() error {
 	for _, buffer := range w.buffers {
@@ -214,6 +225,15 @@ func (w *Webcam) Close() error {
 	err := w.file.Close()
 
 	return err
+}
+
+// Sets automatic white balance correction
+func (w *Webcam) SetAutoWhiteBalance(val bool) error {
+	v := int32(0)
+	if val {
+		v = 1
+	}
+	return setControl(w.fd, V4L2_CID_AUTO_WHITE_BALANCE, v)
 }
 
 func gobytes(p unsafe.Pointer, n int) []byte {
