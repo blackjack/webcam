@@ -20,27 +20,10 @@ import (
 	"github.com/blackjack/webcam"
 )
 
-/*
-#include <libv4lconvert.h>
-#include <linux/videodev2.h>
-#cgo pkg-config: libv4lconvert
-
-static int
-wrap( struct v4lconvert_data *data, struct v4l2_pix_format s, struct v4l2_pix_format d, unsigned char *sb, int sl, unsigned char *db, int dl) {
-    struct v4l2_format sf, df;
-    sf.type=0;
-    df.type=0;
-    sf.fmt.pix = s;
-    df.fmt.pix = d;
-    return v4lconvert_convert(data,
-				&sf,
-				&df,
-				sb, sl,
-				db, dl);
-}
-
-*/
-import "C"
+const (
+	V4L2_PIX_FMT_PJPG = 0x47504A50
+	V4L2_PIX_FMT_YUYV = 0x56595559
+)
 
 type FrameSizes []webcam.FrameSize
 
@@ -61,8 +44,8 @@ func (slice FrameSizes) Swap(i, j int) {
 }
 
 var supportedFormats = map[webcam.PixelFormat]bool{
-	C.V4L2_PIX_FMT_PJPG: true,
-	C.V4L2_PIX_FMT_YUYV: true,
+	V4L2_PIX_FMT_PJPG: true,
+	V4L2_PIX_FMT_YUYV: true,
 }
 
 func main() {
@@ -211,7 +194,6 @@ FMT:
 
 func encodeToImage(wc *webcam.Webcam, back chan struct{}, fi chan []byte, li chan *bytes.Buffer, w, h uint32, format webcam.PixelFormat) {
 
-	v4lconvert_data := C.v4lconvert_create(C.int(wc.File().Fd()))
 	var (
 		frame []byte
 		img   image.Image
@@ -226,42 +208,7 @@ func encodeToImage(wc *webcam.Webcam, back chan struct{}, fi chan []byte, li cha
 		back <- struct{}{}
 
 		switch format {
-		// i dont know how to convert this to jpeg directly
-		case C.V4L2_PIX_FMT_PJPG:
-			dst_buf := make([]byte, w*h*3)
-			src_fmt := C.struct_v4l2_pix_format{}
-			src_fmt.width = C.__u32(w)
-			src_fmt.height = C.__u32(h)
-			src_fmt.pixelformat = C.V4L2_PIX_FMT_PJPG
-
-			dst_fmt := C.struct_v4l2_pix_format{}
-			dst_fmt.width = C.__u32(w)
-			dst_fmt.height = C.__u32(h)
-			dst_fmt.pixelformat = C.V4L2_PIX_FMT_RGB24
-
-			if r := C.wrap(v4lconvert_data,
-				src_fmt,
-				dst_fmt,
-				(*C.uchar)(&frame[0]), C.int(len(bframe)),
-				(*C.uchar)(&dst_buf[0]), C.int(len(dst_buf))); r < 1 {
-				log.Fatal("error converting", r)
-			}
-
-			rgba := image.NewRGBA(image.Rect(0, 0, int(w), int(h)))
-			rgba.Stride = int(w * 4)
-			for i, j := 0, 0; i < len(dst_buf); {
-				rgba.Pix[j] = dst_buf[i]
-				i++
-				j++
-				rgba.Pix[j] = dst_buf[i]
-				i++
-				j++
-				rgba.Pix[j] = dst_buf[i]
-				i++
-				j += 2
-			}
-			img = rgba
-		case C.V4L2_PIX_FMT_YUYV:
+		case V4L2_PIX_FMT_YUYV:
 			yuyv := image.NewYCbCr(image.Rect(0, 0, int(w), int(h)), image.YCbCrSubsampleRatio422)
 			for i := range yuyv.Cb {
 				ii := i * 4
