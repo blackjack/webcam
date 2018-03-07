@@ -6,14 +6,12 @@ package webcam
 import (
 	"errors"
 	"golang.org/x/sys/unix"
-	"os"
 	"reflect"
 	"unsafe"
 )
 
 // Webcam object
 type Webcam struct {
-	file    *os.File
 	fd      uintptr
 	buffers [][]byte
 }
@@ -23,8 +21,8 @@ type Webcam struct {
 // capable to stream video
 func Open(path string) (*Webcam, error) {
 
-	file, err := os.OpenFile(path, unix.O_RDWR|unix.O_NONBLOCK, 0666)
-	fd := file.Fd()
+	handle, err := unix.Open(path, unix.O_RDWR|unix.O_NONBLOCK, 0666)
+	fd := uintptr(handle)
 
 	if fd < 0 || err != nil {
 		return nil, err
@@ -45,8 +43,7 @@ func Open(path string) (*Webcam, error) {
 	}
 
 	w := new(Webcam)
-	w.fd = fd
-	w.file = file
+	w.fd = uintptr(fd)
 	return w, nil
 }
 
@@ -218,7 +215,7 @@ func (w *Webcam) Close() error {
 		}
 	}
 
-	err := w.file.Close()
+	err := unix.Close(int(w.fd))
 
 	return err
 }
