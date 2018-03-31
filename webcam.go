@@ -18,6 +18,8 @@ type Webcam struct {
 	streaming bool
 }
 
+const maxBufferCount = 512
+
 // Open a webcam with a given path
 // Checks if device is a v4l2 device and if it is
 // capable to stream video
@@ -122,6 +124,9 @@ func (w *Webcam) SetBufferCount(count uint32) error {
 	if w.streaming {
 		return errors.New("Cannot set buffer count when streaming")
 	}
+    if count < 2 || count > maxBufferCount {
+        return errors.New("Illegal buffer count")
+    }
 	w.bufcount = count
 	return nil
 }
@@ -136,6 +141,10 @@ func (w *Webcam) StartStreaming() error {
 
 	if err != nil {
 		return errors.New("Failed to map request buffers: " + string(err.Error()))
+	}
+
+	if w.bufcount < 2 {
+		return errors.New("Insufficient buffer memory")
 	}
 
 	w.buffers = make([][]byte, w.bufcount, w.bufcount)
