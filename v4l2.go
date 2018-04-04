@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"unsafe"
 
-	"github.com/aamcrae/webcam/ioctl"
+	"github.com/blackjack/webcam/ioctl"
 	"golang.org/x/sys/unix"
 )
 
