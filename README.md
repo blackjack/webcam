@@ -45,6 +45,14 @@ for {
 }
 ```
 For more detailed example see [examples folder](https://github.com/blackjack/webcam/tree/master/examples)
+The number of frame buffers used may be set as:
+```go
+// If already streaming, stop streaming.
+if streaming_on {
+  cam.StopStreaming()
+}
+err = cam.SetBufferCount(64)
+```
 
 ## Roadmap
 

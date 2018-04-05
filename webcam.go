@@ -12,9 +12,10 @@ import (
 
 // Webcam object
 type Webcam struct {
-	fd       uintptr
-	bufcount uint32
-	buffers  [][]byte
+	fd        uintptr
+	bufcount  uint32
+	buffers   [][]byte
+	streaming bool
 }
 
 // Open a webcam with a given path
@@ -116,12 +117,20 @@ func (w *Webcam) SetImageFormat(f PixelFormat, width, height uint32) (PixelForma
 }
 
 // Set the number of frames to be buffered.
-func (w *Webcam) SetBufferCount(count uint32) {
+// Not allowed if streaming is already on.
+func (w *Webcam) SetBufferCount(count uint32) error {
+	if w.streaming {
+		return errors.New("Cannot set buffer count when streaming")
+	}
 	w.bufcount = count
+	return nil
 }
 
 // Start streaming process
 func (w *Webcam) StartStreaming() error {
+	if w.streaming {
+		return errors.New("Already streaming")
+	}
 
 	err := mmapRequestBuffers(w.fd, &w.bufcount)
 
@@ -157,6 +166,7 @@ func (w *Webcam) StartStreaming() error {
 	if err != nil {
 		return errors.New("Failed to start streaming: " + string(err.Error()))
 	}
+	w.streaming = true
 
 	return nil
 }
@@ -210,6 +220,10 @@ func (w *Webcam) WaitForFrame(timeout uint32) error {
 }
 
 func (w *Webcam) StopStreaming() error {
+	if !w.streaming {
+		return errors.New("Request to stop streaming when not streaming")
+	}
+	w.streaming = false
 	for _, buffer := range w.buffers {
 		err := mmapReleaseBuffer(buffer)
 		if err != nil {
@@ -222,11 +236,8 @@ func (w *Webcam) StopStreaming() error {
 
 // Close the device
 func (w *Webcam) Close() error {
-	for _, buffer := range w.buffers {
-		err := mmapReleaseBuffer(buffer)
-		if err != nil {
-			return err
-		}
+	if w.streaming {
+		w.StopStreaming()
 	}
 
 	err := unix.Close(int(w.fd))
