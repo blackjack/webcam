@@ -12,12 +12,10 @@ import (
 
 // Webcam object
 type Webcam struct {
-	fd      uintptr
-    bufcount uint32
-	buffers [][]byte
+	fd       uintptr
+	bufcount uint32
+	buffers  [][]byte
 }
-
-const maxBufferCount = 512
 
 // Open a webcam with a given path
 // Checks if device is a v4l2 device and if it is
@@ -47,7 +45,7 @@ func Open(path string) (*Webcam, error) {
 
 	w := new(Webcam)
 	w.fd = uintptr(fd)
-    w.bufcount = 256
+	w.bufcount = 256
 	return w, nil
 }
 
@@ -118,12 +116,8 @@ func (w *Webcam) SetImageFormat(f PixelFormat, width, height uint32) (PixelForma
 }
 
 // Set the number of frames to be buffered.
-func (w *Webcam) SetBufferCount(count uint32) error {
-    if count < 2 || count > maxBufferCount {
-        return errors.New("Illegal buffer count")
-    }
-    w.bufcount = count
-    return nil
+func (w *Webcam) SetBufferCount(count uint32) {
+	w.bufcount = count
 }
 
 // Start streaming process
@@ -133,10 +127,6 @@ func (w *Webcam) StartStreaming() error {
 
 	if err != nil {
 		return errors.New("Failed to map request buffers: " + string(err.Error()))
-	}
-
-	if w.bufcount < 2 {
-		return errors.New("Insufficient buffer memory")
 	}
 
 	w.buffers = make([][]byte, w.bufcount, w.bufcount)
@@ -175,11 +165,11 @@ func (w *Webcam) StartStreaming() error {
 // If frame cannot be read at the moment
 // function will return empty slice
 func (w *Webcam) ReadFrame() ([]byte, error) {
-    result, index, err := w.GetFrame()
-    if err == nil {
-        w.ReleaseFrame(index)
-    }
-    return result, err
+	result, index, err := w.GetFrame()
+	if err == nil {
+		w.ReleaseFrame(index)
+	}
+	return result, err
 }
 
 // Get a single frame from the webcam and return the frame and
