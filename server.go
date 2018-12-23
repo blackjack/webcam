@@ -5,12 +5,14 @@ import (
     "fmt"
     "image/png"
     "log"
-    "os"
+    "net/http"
 )
 
+var port = flag.Int("port", 8080, "Web server port number")
 var device = flag.String("input", "/dev/video0", "Input video device")
 var resolution = flag.String("resolution", "800x600", "Selected resolution of camera")
 var format = flag.String("format", "YUYV 4:2:2", "Selected pixel format of camera")
+var verbose = flag.Bool("v", false, "Log more information")
 
 func init() {
     flag.Parse()
@@ -25,20 +27,30 @@ func main() {
     if err := cam.Init(*format, *resolution); err != nil {
 		log.Fatalf("Init failed: %v", err)
     }
+    http.Handle("/image", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
+            readImage(cam, w, r)
+        }))
+    url := fmt.Sprintf(":%d", *port)
+    if *verbose {
+        log.Printf("Starting server on %s", url)
+    }
+    s := &http.Server{Addr: url}
+    log.Fatal(s.ListenAndServe())
+}
+
+func readImage(cam *Camera, w http.ResponseWriter, r *http.Request) {
+    if *verbose {
+        log.Printf("URL request: %v", r.URL)
+    }
     frame, err := cam.GetFrame()
     if err != nil {
         log.Fatalf("Getframe: %v", err)
     }
-    fname := "test.png"
-    of, err := os.Create(fname)
-    if err != nil {
-		 log.Fatalf("Failed to create %s: %v", fname, err)
-    }
-    if err := png.Encode(of, frame); err != nil {
-        fmt.Printf("Error writing %s: %v\n", fname, err)
-    } else {
-        fmt.Printf("Wrote %s successfully\n", fname)
+    w.Header().Set("Content-Type", "image/png")
+    if err := png.Encode(w, frame); err != nil {
+        log.Printf("Error writing image: %v\n", err)
+    } else if *verbose {
+        log.Printf("Wrote image successfully\n")
     }
     frame.Release()
-    of.Close()
 }
