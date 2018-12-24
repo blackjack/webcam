@@ -148,3 +148,13 @@ func (c *Camera) Query() map[string][]string {
     }
     return m
 }
+
+// Get control value.
+func (c *Camera) GetControl(name string) (int32, error) {
+    return c.cam.GetControl(name)
+}
+
+// Set control value.
+func (c *Camera) SetControl(name string, value int32) error {
+    return c.cam.SetControl(name, value)
+}
