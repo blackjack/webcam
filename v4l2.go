@@ -3,9 +3,10 @@ package webcam
 import (
 	"bytes"
 	"encoding/binary"
+    "strings"
 	"unsafe"
 
-	"github.com/blackjack/webcam/ioctl"
+	"github.com/aamcrae/webcam/ioctl"
 	"golang.org/x/sys/unix"
 )
 
@@ -19,8 +20,8 @@ const (
 type control struct {
     id      uint32
     c_type  controlType
-    min int64
-    max int64
+    min int32
+    max int32
 }
 
 const (
@@ -62,12 +63,8 @@ const (
 
 
 const (
+    V4L2_CTRL_FLAG_DISABLED         uint32 = 0x00000001
     V4L2_CTRL_FLAG_NEXT_CTRL        uint32 = 0x80000000
-    V4L2_CTRL_FLAG_NEXT_COMPOUND    uint32 = 0x40000000
-)
-
-const (
-    V4L2_CTRL_MAX_DIMS      uint32 = 4
 )
 
 var (
@@ -81,7 +78,6 @@ var (
 	VIDIOC_G_CTRL         = ioctl.IoRW(uintptr('V'), 27, unsafe.Sizeof(v4l2_control{}))
 	VIDIOC_S_CTRL         = ioctl.IoRW(uintptr('V'), 28, unsafe.Sizeof(v4l2_control{}))
 	VIDIOC_QUERYCTRL      = ioctl.IoRW(uintptr('V'), 36, unsafe.Sizeof(v4l2_queryctrl{}))
-	VIDIOC_QUERY_EXT_CTRL = ioctl.IoRW(uintptr('V'), 103, unsafe.Sizeof(v4l2_query_ext_ctrl{}))
 	//sizeof int32
 	VIDIOC_STREAMON        = ioctl.IoW(uintptr('V'), 18, 4)
 	VIDIOC_STREAMOFF       = ioctl.IoW(uintptr('V'), 19, 4)
@@ -205,22 +201,6 @@ type v4l2_queryctrl struct {
 type v4l2_control struct {
 	id    uint32
 	value int32
-}
-
-type v4l2_query_ext_ctrl struct {
-    id              uint32
-    _type           uint32
-    name            [32]uint8
-    minimum         int64
-    maximum         int64
-    step            uint64
-    default_value   int64
-    flags           uint32
-    elem_size       uint32
-    elems           uint32
-    nr_of_dims      uint32
-    dims            uint32
-    reserved        [32]uint32
 }
 
 func checkCapabilities(fd uintptr) (supportsVideoCapture bool, supportsVideoStreaming bool, err error) {
@@ -494,14 +474,17 @@ func setControl(fd uintptr, id uint32, val int32) error {
 func queryControls(fd uintptr) map[string]control {
 	var controls map[string]control = make(map[string]control)
 	var err error
-    id := V4L2_CTRL_FLAG_NEXT_CTRL | V4L2_CTRL_FLAG_NEXT_COMPOUND
-    for err == nil {
-        id |= V4L2_CTRL_FLAG_NEXT_CTRL | V4L2_CTRL_FLAG_NEXT_COMPOUND
-        query := &v4l2_query_ext_ctrl{}
+    id := V4L2_CID_BASE
+    for err != ioctl.ErrEINVAL {
+        id |= V4L2_CTRL_FLAG_NEXT_CTRL
+        query := &v4l2_queryctrl{}
         query.id = id
 		err = ioctl.Ioctl(fd, VIDIOC_QUERYCTRL, uintptr(unsafe.Pointer(query)))
 		if err == nil {
             id = query.id
+            if (query.flags & V4L2_CTRL_FLAG_DISABLED) != 0 {
+                continue
+            }
             var c control
             switch query._type {
             default: continue
@@ -515,7 +498,9 @@ func queryControls(fd uintptr) map[string]control {
             c.id = id
             c.min = query.minimum
             c.max = query.maximum
-            controls[CToGoString(query.name[:])] = c
+            // Normalise name (' ' -> '_', make lower case).
+            n := strings.Replace(strings.ToLower(CToGoString(query.name[:])), " ", "_", -1)
+            controls[n] = c
 		}
 	}
 	return controls
