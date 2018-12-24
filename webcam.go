@@ -16,6 +16,7 @@ type Webcam struct {
 	bufcount  uint32
 	buffers   [][]byte
 	streaming bool
+    controls map[string]control
 }
 
 // Open a webcam with a given path
@@ -124,6 +125,35 @@ func (w *Webcam) SetBufferCount(count uint32) error {
 	}
 	w.bufcount = count
 	return nil
+}
+
+// Get the value of a control.
+func (w *Webcam) GetControl(name string) (int32, error) {
+    c, err := w.lookupControl(name)
+    if err != nil {
+        return 0, err
+    }
+    return getControl(w.fd, c.id)
+}
+
+// Set a control.
+func (w *Webcam) SetControl(name string, value int32) error {
+    c, err := w.lookupControl(name)
+    if err != nil {
+        return err
+    }
+    return setControl(w.fd, c.id, value)
+}
+
+func (w *Webcam) lookupControl(name string) (control, error) {
+    if len(w.controls) == 0 {
+        w.controls = queryControls(w.fd)
+    }
+    c, ok := w.controls[name]
+    if !ok {
+        return control{}, errors.New("Unknown control: " + name)
+    }
+    return c, nil
 }
 
 // Start streaming process
