@@ -3,7 +3,7 @@ package main
 import (
     "flag"
     "fmt"
-    "image/png"
+    "image/jpeg"
     "log"
     "net/http"
     "strconv"
@@ -68,8 +68,8 @@ func readImage(cam *Camera, w http.ResponseWriter, r *http.Request) {
     if err != nil {
         log.Fatalf("Getframe: %v", err)
     }
-    w.Header().Set("Content-Type", "image/png")
-    if err := png.Encode(w, frame); err != nil {
+    w.Header().Set("Content-Type", "image/jpeg")
+    if err := jpeg.Encode(w, frame, nil); err != nil {
         log.Printf("Error writing image: %v\n", err)
     } else if *verbose {
         log.Printf("Wrote image successfully\n")
