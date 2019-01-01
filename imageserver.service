@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 User=root
-Type=forking
+Type=simple
 TimeoutStopSec=10
 ExecStart=/usr/local/bin/imageserver
 
