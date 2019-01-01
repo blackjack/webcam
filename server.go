@@ -14,7 +14,7 @@ var port = flag.Int("port", 8080, "Web server port number")
 var device = flag.String("input", "/dev/video0", "Input video device")
 var resolution = flag.String("resolution", "800x600", "Selected resolution of camera")
 var format = flag.String("format", "YUYV 4:2:2", "Selected pixel format of camera")
-var controls = flag.String("controls", "focus=170,power_line_frequency=1",
+var controls = flag.String("controls", "focus=190,power_line_frequency=1",
                             "Control parameters for camera")
 var verbose = flag.Bool("v", false, "Log more information")
 
