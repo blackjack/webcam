@@ -8,6 +8,7 @@ import (
     "net/http"
     "strconv"
     "strings"
+    "time"
 )
 
 var port = flag.Int("port", 8080, "Web server port number")
@@ -16,6 +17,7 @@ var resolution = flag.String("resolution", "800x600", "Selected resolution of ca
 var format = flag.String("format", "YUYV 4:2:2", "Selected pixel format of camera")
 var controls = flag.String("controls", "focus=190,power_line_frequency=1",
                             "Control parameters for camera")
+var startDelay = flag.Int("delay", 5, "Delay at start (seconds)")
 var verbose = flag.Bool("v", false, "Log more information")
 
 func init() {
@@ -23,6 +25,9 @@ func init() {
 }
 
 func main() {
+    if *startDelay != 0 {
+        time.Sleep(time.Duration(*startDelay) * time.Second)
+    }
     cam, err := OpenCamera(*device)
     if err != nil {
         log.Fatalf("%s: %v", *device, err)
