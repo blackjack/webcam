@@ -474,14 +474,15 @@ func setControl(fd uintptr, id uint32, val int32) error {
 func queryControls(fd uintptr) map[string]control {
 	var controls map[string]control = make(map[string]control)
 	var err error
-    id := V4L2_CID_BASE
+    // Don't use V42L_CID_BASE since it is the same as brightness.
+    var id uint32
     for err != ioctl.ErrEINVAL {
         id |= V4L2_CTRL_FLAG_NEXT_CTRL
         query := &v4l2_queryctrl{}
         query.id = id
 		err = ioctl.Ioctl(fd, VIDIOC_QUERYCTRL, uintptr(unsafe.Pointer(query)))
+        id = query.id
 		if err == nil {
-            id = query.id
             if (query.flags & V4L2_CTRL_FLAG_DISABLED) != 0 {
                 continue
             }
