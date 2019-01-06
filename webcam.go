@@ -19,6 +19,12 @@ type Webcam struct {
     controls map[string]control
 }
 
+type Control struct {
+    Name string
+    Min int32
+    Max int32
+}
+
 // Open a webcam with a given path
 // Checks if device is a v4l2 device and if it is
 // capable to stream video
@@ -125,6 +131,18 @@ func (w *Webcam) SetBufferCount(count uint32) error {
 	}
 	w.bufcount = count
 	return nil
+}
+
+// Get the list of available controls.
+func (w *Webcam) GetControlList() []Control {
+    var clist []Control
+    if len(w.controls) == 0 {
+        w.controls = queryControls(w.fd)
+    }
+    for s, c := range w.controls {
+        clist = append(clist, Control{s, c.min, c.max})
+    }
+    return clist
 }
 
 // Get the value of a control.
