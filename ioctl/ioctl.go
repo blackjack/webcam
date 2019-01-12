@@ -22,7 +22,7 @@ const (
 	sizeShift      = typeShift + typeBits
 	directionShift = sizeShift + sizeBits
 
-    ErrEINVAL = unix.EINVAL
+	ErrEINVAL = unix.EINVAL
 )
 
 func ioc(dir, t, nr, size uintptr) uintptr {
