@@ -3,7 +3,7 @@ package webcam
 import (
 	"bytes"
 	"encoding/binary"
-    "strings"
+	"strings"
 	"unsafe"
 
 	"github.com/aamcrae/webcam/ioctl"
@@ -11,17 +11,18 @@ import (
 )
 
 type controlType int
+
 const (
-    c_int controlType = iota
-    c_bool
-    c_menu
+	c_int controlType = iota
+	c_bool
+	c_menu
 )
 
 type control struct {
-    id      uint32
-    c_type  controlType
-    min int32
-    max int32
+	id     uint32
+	c_type controlType
+	min    int32
+	max    int32
 }
 
 const (
@@ -45,39 +46,38 @@ const (
 )
 
 const (
-    V4L2_CTRL_TYPE_INTEGER      uint32 = 1
-    V4L2_CTRL_TYPE_BOOLEAN      uint32 = 2
-    V4L2_CTRL_TYPE_MENU         uint32 = 3
-    V4L2_CTRL_TYPE_BUTTON       uint32 = 4
-    V4L2_CTRL_TYPE_INTEGER64    uint32 = 5
-    V4L2_CTRL_TYPE_CTRL_CLASS   uint32 = 6
-    V4L2_CTRL_TYPE_STRING       uint32 = 7
-    V4L2_CTRL_TYPE_BITMASK      uint32 = 8
-    V4L2_CTRL_TYPE_INTEGER_MENU uint32 = 9
+	V4L2_CTRL_TYPE_INTEGER      uint32 = 1
+	V4L2_CTRL_TYPE_BOOLEAN      uint32 = 2
+	V4L2_CTRL_TYPE_MENU         uint32 = 3
+	V4L2_CTRL_TYPE_BUTTON       uint32 = 4
+	V4L2_CTRL_TYPE_INTEGER64    uint32 = 5
+	V4L2_CTRL_TYPE_CTRL_CLASS   uint32 = 6
+	V4L2_CTRL_TYPE_STRING       uint32 = 7
+	V4L2_CTRL_TYPE_BITMASK      uint32 = 8
+	V4L2_CTRL_TYPE_INTEGER_MENU uint32 = 9
 
-    V4L2_CTRL_COMPOUND_TYPES    uint32 = 0x0100
-    V4L2_CTRL_TYPE_U8           uint32 = 0x0100
-    V4L2_CTRL_TYPE_U16          uint32 = 0x0101
-    V4L2_CTRL_TYPE_U32          uint32 = 0x0102
+	V4L2_CTRL_COMPOUND_TYPES uint32 = 0x0100
+	V4L2_CTRL_TYPE_U8        uint32 = 0x0100
+	V4L2_CTRL_TYPE_U16       uint32 = 0x0101
+	V4L2_CTRL_TYPE_U32       uint32 = 0x0102
 )
 
-
 const (
-    V4L2_CTRL_FLAG_DISABLED         uint32 = 0x00000001
-    V4L2_CTRL_FLAG_NEXT_CTRL        uint32 = 0x80000000
+	V4L2_CTRL_FLAG_DISABLED  uint32 = 0x00000001
+	V4L2_CTRL_FLAG_NEXT_CTRL uint32 = 0x80000000
 )
 
 var (
-	VIDIOC_QUERYCAP       = ioctl.IoR(uintptr('V'), 0, unsafe.Sizeof(v4l2_capability{}))
-	VIDIOC_ENUM_FMT       = ioctl.IoRW(uintptr('V'), 2, unsafe.Sizeof(v4l2_fmtdesc{}))
-	VIDIOC_S_FMT          = ioctl.IoRW(uintptr('V'), 5, unsafe.Sizeof(v4l2_format{}))
-	VIDIOC_REQBUFS        = ioctl.IoRW(uintptr('V'), 8, unsafe.Sizeof(v4l2_requestbuffers{}))
-	VIDIOC_QUERYBUF       = ioctl.IoRW(uintptr('V'), 9, unsafe.Sizeof(v4l2_buffer{}))
-	VIDIOC_QBUF           = ioctl.IoRW(uintptr('V'), 15, unsafe.Sizeof(v4l2_buffer{}))
-	VIDIOC_DQBUF          = ioctl.IoRW(uintptr('V'), 17, unsafe.Sizeof(v4l2_buffer{}))
-	VIDIOC_G_CTRL         = ioctl.IoRW(uintptr('V'), 27, unsafe.Sizeof(v4l2_control{}))
-	VIDIOC_S_CTRL         = ioctl.IoRW(uintptr('V'), 28, unsafe.Sizeof(v4l2_control{}))
-	VIDIOC_QUERYCTRL      = ioctl.IoRW(uintptr('V'), 36, unsafe.Sizeof(v4l2_queryctrl{}))
+	VIDIOC_QUERYCAP  = ioctl.IoR(uintptr('V'), 0, unsafe.Sizeof(v4l2_capability{}))
+	VIDIOC_ENUM_FMT  = ioctl.IoRW(uintptr('V'), 2, unsafe.Sizeof(v4l2_fmtdesc{}))
+	VIDIOC_S_FMT     = ioctl.IoRW(uintptr('V'), 5, unsafe.Sizeof(v4l2_format{}))
+	VIDIOC_REQBUFS   = ioctl.IoRW(uintptr('V'), 8, unsafe.Sizeof(v4l2_requestbuffers{}))
+	VIDIOC_QUERYBUF  = ioctl.IoRW(uintptr('V'), 9, unsafe.Sizeof(v4l2_buffer{}))
+	VIDIOC_QBUF      = ioctl.IoRW(uintptr('V'), 15, unsafe.Sizeof(v4l2_buffer{}))
+	VIDIOC_DQBUF     = ioctl.IoRW(uintptr('V'), 17, unsafe.Sizeof(v4l2_buffer{}))
+	VIDIOC_G_CTRL    = ioctl.IoRW(uintptr('V'), 27, unsafe.Sizeof(v4l2_control{}))
+	VIDIOC_S_CTRL    = ioctl.IoRW(uintptr('V'), 28, unsafe.Sizeof(v4l2_control{}))
+	VIDIOC_QUERYCTRL = ioctl.IoRW(uintptr('V'), 36, unsafe.Sizeof(v4l2_queryctrl{}))
 	//sizeof int32
 	VIDIOC_STREAMON        = ioctl.IoW(uintptr('V'), 18, 4)
 	VIDIOC_STREAMOFF       = ioctl.IoW(uintptr('V'), 19, 4)
@@ -461,7 +461,7 @@ func getControl(fd uintptr, id uint32) (int32, error) {
 	ctrl := &v4l2_control{}
 	ctrl.id = id
 	err := ioctl.Ioctl(fd, VIDIOC_G_CTRL, uintptr(unsafe.Pointer(ctrl)))
-    return ctrl.value, err
+	return ctrl.value, err
 }
 
 func setControl(fd uintptr, id uint32, val int32) error {
@@ -474,34 +474,35 @@ func setControl(fd uintptr, id uint32, val int32) error {
 func queryControls(fd uintptr) map[string]control {
 	var controls map[string]control = make(map[string]control)
 	var err error
-    // Don't use V42L_CID_BASE since it is the same as brightness.
-    var id uint32
-    for err != ioctl.ErrEINVAL {
-        id |= V4L2_CTRL_FLAG_NEXT_CTRL
-        query := &v4l2_queryctrl{}
-        query.id = id
+	// Don't use V42L_CID_BASE since it is the same as brightness.
+	var id uint32
+	for err != ioctl.ErrEINVAL {
+		id |= V4L2_CTRL_FLAG_NEXT_CTRL
+		query := &v4l2_queryctrl{}
+		query.id = id
 		err = ioctl.Ioctl(fd, VIDIOC_QUERYCTRL, uintptr(unsafe.Pointer(query)))
-        id = query.id
+		id = query.id
 		if err == nil {
-            if (query.flags & V4L2_CTRL_FLAG_DISABLED) != 0 {
-                continue
-            }
-            var c control
-            switch query._type {
-            default: continue
-            case V4L2_CTRL_TYPE_INTEGER, V4L2_CTRL_TYPE_INTEGER64:
-                c.c_type = c_int
-            case V4L2_CTRL_TYPE_BOOLEAN:
-                c.c_type = c_bool
-            case V4L2_CTRL_TYPE_MENU:
-                c.c_type = c_menu
-            }
-            c.id = id
-            c.min = query.minimum
-            c.max = query.maximum
-            // Normalise name (' ' -> '_', make lower case).
-            n := strings.Replace(strings.ToLower(CToGoString(query.name[:])), " ", "_", -1)
-            controls[n] = c
+			if (query.flags & V4L2_CTRL_FLAG_DISABLED) != 0 {
+				continue
+			}
+			var c control
+			switch query._type {
+			default:
+				continue
+			case V4L2_CTRL_TYPE_INTEGER, V4L2_CTRL_TYPE_INTEGER64:
+				c.c_type = c_int
+			case V4L2_CTRL_TYPE_BOOLEAN:
+				c.c_type = c_bool
+			case V4L2_CTRL_TYPE_MENU:
+				c.c_type = c_menu
+			}
+			c.id = id
+			c.min = query.minimum
+			c.max = query.maximum
+			// Normalise name (' ' -> '_', make lower case).
+			n := strings.Replace(strings.ToLower(CToGoString(query.name[:])), " ", "_", -1)
+			controls[n] = c
 		}
 	}
 	return controls
