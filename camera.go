@@ -71,7 +71,7 @@ func (c *Camera) Init(format string, resolution string) error {
 
 	sz, ok := sizeMap[resolution]
 	if !ok {
-		return fmt.Errorf("Unsupported resoluton: %s", resolution)
+		return fmt.Errorf("Unsupported resolution: %s", resolution)
 	}
 
 	_, w, h, err := c.cam.SetImageFormat(pixelFormat, uint32(sz.MaxWidth), uint32(sz.MaxHeight))
