@@ -1,7 +1,7 @@
 // Example program that reads the list of available controls and prints them.
 package main
 
-import "github.com/blackjack/webcam"
+import "github.com/aamcrae/webcam"
 import "fmt"
 
 func main() {
@@ -11,10 +11,10 @@ func main() {
 	}
 	defer cam.Close()
 
-    clist := cam.GetControlList()
+    cmap := cam.GetControls()
 
 	fmt.Println("Available controls: ")
-    for _, c := range clist {
-        fmt.Printf("%32s  Min: %4d  Max: %5d\n", c.Name, c.Min, c.Max)
+    for id, c := range cmap {
+        fmt.Printf("ID:%04x %32s  Min: %4d  Max: %5d\n", id, c.Name, c.Min, c.Max)
     }
 }
