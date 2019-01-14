@@ -138,7 +138,7 @@ func (w *Webcam) SetBufferCount(count uint32) error {
 func (w *Webcam) GetControls() map[ControlID]Control {
 	cmap := make(map[ControlID]Control)
 	for _, c := range queryControls(w.fd) {
-        cmap[ControlID(c.id)] = Control{c.name, c.min, c.max}
+		cmap[ControlID(c.id)] = Control{c.name, c.min, c.max}
 	}
 	return cmap
 }

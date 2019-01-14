@@ -19,7 +19,7 @@ const (
 
 type control struct {
 	id     uint32
-    name   string
+	name   string
 	c_type controlType
 	min    int32
 	max    int32
@@ -498,7 +498,7 @@ func queryControls(fd uintptr) []control {
 				c.c_type = c_menu
 			}
 			c.id = id
-            c.name = CToGoString(query.name[:])
+			c.name = CToGoString(query.name[:])
 			c.min = query.minimum
 			c.max = query.maximum
 			controls = append(controls, c)

@@ -11,10 +11,10 @@ func main() {
 	}
 	defer cam.Close()
 
-    cmap := cam.GetControls()
+	cmap := cam.GetControls()
 
 	fmt.Println("Available controls: ")
-    for id, c := range cmap {
-        fmt.Printf("ID:%08x %-32s  Min: %4d  Max: %5d\n", id, c.Name, c.Min, c.Max)
-    }
+	for id, c := range cmap {
+		fmt.Printf("ID:%08x %-32s  Min: %4d  Max: %5d\n", id, c.Name, c.Min, c.Max)
+	}
 }
