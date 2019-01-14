@@ -1,7 +1,7 @@
 // Example program that reads the list of available controls and prints them.
 package main
 
-import "github.com/aamcrae/webcam"
+import "github.com/blackjack/webcam"
 import "fmt"
 
 func main() {
