@@ -151,10 +151,33 @@ func (c *Camera) Query() map[string][]string {
 
 // Get control value.
 func (c *Camera) GetControl(name string) (int32, error) {
-	return c.cam.GetControl(name)
+    id, err := getControlID(name)
+    if err != nil {
+        return 0, err
+    }
+	return c.cam.GetControl(id)
 }
 
 // Set control value.
 func (c *Camera) SetControl(name string, value int32) error {
-	return c.cam.SetControl(name, value)
+    id, err := getControlID(name)
+    if err != nil {
+        return err
+    }
+	return c.cam.SetControl(id, value)
+}
+
+// Return the appropriate ControlID for the control name.
+func getControlID(name string) (webcam.ControlID, error) {
+    var controls map[string]webcam.ControlID = map[string]webcam.ControlID{
+        "focus"                 : 0x009a090a,
+        "power_line_frequency"  : 0x00980918,
+        "brightness"            : 0x00980900,
+        "contrast"              : 0x00980901,
+    }
+    id, ok := controls[name]
+    if !ok {
+        return 0, fmt.Errorf("%s: unknown control")
+    }
+    return id, nil
 }
