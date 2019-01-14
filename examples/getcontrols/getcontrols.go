@@ -15,6 +15,6 @@ func main() {
 
 	fmt.Println("Available controls: ")
     for id, c := range cmap {
-        fmt.Printf("ID:%04x %32s  Min: %4d  Max: %5d\n", id, c.Name, c.Min, c.Max)
+        fmt.Printf("ID:%08x %-32s  Min: %4d  Max: %5d\n", id, c.Name, c.Min, c.Max)
     }
 }
