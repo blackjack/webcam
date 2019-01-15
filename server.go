@@ -19,7 +19,7 @@ var resolution = flag.String("resolution", "800x600", "Selected resolution of ca
 var format = flag.String("format", "YUYV 4:2:2", "Selected pixel format of camera")
 var controls = flag.String("controls", "focus=190,power_line_frequency=1",
 	"Control parameters for camera")
-var startDelay = flag.Int("delay", 5, "Delay at start (seconds)")
+var startDelay = flag.Int("delay", 0, "Delay at start (seconds)")
 var verbose = flag.Bool("v", false, "Log more information")
 
 func init() {
@@ -39,23 +39,25 @@ func main() {
 		log.Fatalf("Init failed: %v", err)
 	}
 	// Initialise camera controls.
-	for _, control := range strings.Split(*controls, ",") {
-		// If no parameter, assume bool and set to true.
-		s := strings.Split(control, "=")
-		if len(s) == 1 {
-			s = append(s, "true")
-		}
-		if len(s) != 2 {
-			log.Fatalf("Bad control option: %s", control)
-		}
-		val, err := strconv.Atoi(s[1])
-		if err != nil {
-			log.Fatalf("Bad control value: %s (%v)", control, err)
-		}
-		if err = cm.SetControl(s[0], int32(val)); err != nil {
-			log.Fatalf("SetControl error: %s (%v)", control, err)
-		}
-	}
+    if len(*controls) != 0 {
+	    for _, control := range strings.Split(*controls, ",") {
+		    // If no parameter, assume bool and set to true.
+		    s := strings.Split(control, "=")
+		    if len(s) == 1 {
+			    s = append(s, "true")
+		    }
+		    if len(s) != 2 {
+			    log.Fatalf("Bad control option: %s", control)
+		    }
+		    val, err := strconv.Atoi(s[1])
+		    if err != nil {
+			    log.Fatalf("Bad control value: %s (%v)", control, err)
+		    }
+		    if err = cm.SetControl(s[0], int32(val)); err != nil {
+			    log.Fatalf("SetControl error: %s (%v)", control, err)
+		    }
+	    }
+    }
 	http.Handle("/image", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		readImage(cm, w, r)
 	}))
