@@ -1,4 +1,4 @@
-package main
+package cam
 
 import (
 	"fmt"
@@ -13,11 +13,12 @@ type FrameYUYV422 struct {
 	release func()
 }
 
+// Register this framer for this format.
 func init() {
     RegisterFramer("YUYV 4:2:2", newFrameYUYV422)
 }
 
-// Wrap a raw frame in a Frame so that it can be used as an image.
+// Wrap a raw webcam frame in a Frame so that it can be used as an image.
 func newFrameYUYV422(x int, y int, f []byte, rel func()) (Frame, error) {
 	expLen := 2 * x * y
 	if len(f) != expLen {
@@ -46,7 +47,7 @@ func (f *FrameYUYV422) At(x, y int) color.Color {
 	}
 }
 
-// Done with frame, release back to camera (if required)
+// Done with frame, release back to camera (if required).
 func (f *FrameYUYV422) Release() {
 	if f.release != nil {
 		f.release()

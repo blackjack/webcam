@@ -1,4 +1,4 @@
-package main
+package cam
 
 import (
 	"fmt"
@@ -12,11 +12,13 @@ type Frame interface {
 
 var frameHandlers = map[string]func(int, int, []byte, func()) (Frame, error){}
 
+// RegisterFramer registers a frame handler for a particular format.
+// Note that only one handler can be registered for any format.
 func RegisterFramer(format string, handler func(int, int, []byte, func()) (Frame, error)) {
     frameHandlers[format] = handler
 }
 
-// Return a function that wraps the frame for this format.
+// GetFramer returns a function that wraps the frame for this format.
 func GetFramer(format string) (func(int, int, []byte, func()) (Frame, error), error) {
 	if f, ok := frameHandlers[format]; ok {
 		return f, nil

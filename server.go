@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+    "github.com/aamcrae/imageserver/cam"
 )
 
 var port = flag.Int("port", 8080, "Web server port number")
@@ -28,12 +30,12 @@ func main() {
 	if *startDelay != 0 {
 		time.Sleep(time.Duration(*startDelay) * time.Second)
 	}
-	cam, err := OpenCamera(*device)
+	cm, err := cam.OpenCamera(*device)
 	if err != nil {
 		log.Fatalf("%s: %v", *device, err)
 	}
-	defer cam.Close()
-	if err := cam.Init(*format, *resolution); err != nil {
+	defer cm.Close()
+	if err := cm.Init(*format, *resolution); err != nil {
 		log.Fatalf("Init failed: %v", err)
 	}
 	// Initialise camera controls.
@@ -50,12 +52,12 @@ func main() {
 		if err != nil {
 			log.Fatalf("Bad control value: %s (%v)", control, err)
 		}
-		if err = cam.SetControl(s[0], int32(val)); err != nil {
+		if err = cm.SetControl(s[0], int32(val)); err != nil {
 			log.Fatalf("SetControl error: %s (%v)", control, err)
 		}
 	}
 	http.Handle("/image", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		readImage(cam, w, r)
+		readImage(cm, w, r)
 	}))
 	url := fmt.Sprintf(":%d", *port)
 	if *verbose {
@@ -65,11 +67,11 @@ func main() {
 	log.Fatal(s.ListenAndServe())
 }
 
-func readImage(cam *Camera, w http.ResponseWriter, r *http.Request) {
+func readImage(cm *cam.Camera, w http.ResponseWriter, r *http.Request) {
 	if *verbose {
 		log.Printf("URL request: %v", r.URL)
 	}
-	frame, err := cam.GetFrame()
+	frame, err := cm.GetFrame()
 	if err != nil {
 		log.Fatalf("Getframe: %v", err)
 	}

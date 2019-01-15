@@ -1,9 +1,11 @@
-package main
+// package cam is an snapshot interface to a webcam.
+// Still frames are returned as an image.Image.
+package cam
 
 import (
 	"fmt"
+
 	"github.com/aamcrae/webcam"
-	"log"
 )
 
 type snapshot struct {
@@ -22,6 +24,7 @@ type Camera struct {
 	stream   chan snapshot
 }
 
+// OpenCamera opens the webcam and creates the channels ready for use.
 func OpenCamera(name string) (*Camera, error) {
 	c, err := webcam.Open(name)
 	if err != nil {
@@ -33,6 +36,7 @@ func OpenCamera(name string) (*Camera, error) {
 	return camera, nil
 }
 
+// Close releases all current frames and shuts down the webcam.
 func (c *Camera) Close() {
 	c.stop <- struct{}{}
 	// Flush any remaining frames.
@@ -43,6 +47,7 @@ func (c *Camera) Close() {
 	c.cam.Close()
 }
 
+// Init initialises the webcam ready for use, and begins streaming.
 func (c *Camera) Init(format string, resolution string) error {
 	// Get the supported formats and their descriptions.
 	format_desc := c.cam.GetSupportedFormats()
@@ -91,6 +96,7 @@ func (c *Camera) Init(format string, resolution string) error {
 	return nil
 }
 
+// GetFrame returns one frame from the camera.
 func (c *Camera) GetFrame() (Frame, error) {
 	snap, ok := <-c.stream
 	if !ok {
@@ -112,12 +118,12 @@ func (c *Camera) capture() {
 		case *webcam.Timeout:
 			continue
 		default:
-			log.Fatal(err)
+			panic(err)
 		}
 
 		frame, index, err := c.cam.GetFrame()
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 		select {
 		// Only executed if stream is ready to receive.
@@ -133,7 +139,7 @@ func (c *Camera) capture() {
 	}
 }
 
-// Return map of supported formats and resolutions.
+// Query returns a map of the supported formats and resolutions.
 func (c *Camera) Query() map[string][]string {
 	m := map[string][]string{}
 	formats := c.cam.GetSupportedFormats()
@@ -149,7 +155,7 @@ func (c *Camera) Query() map[string][]string {
 	return m
 }
 
-// Get control value.
+// GetControl returns the current value of a camera control.
 func (c *Camera) GetControl(name string) (int32, error) {
     id, err := getControlID(name)
     if err != nil {
@@ -158,7 +164,7 @@ func (c *Camera) GetControl(name string) (int32, error) {
 	return c.cam.GetControl(id)
 }
 
-// Set control value.
+// SetControl sets the selected camera control.
 func (c *Camera) SetControl(name string, value int32) error {
     id, err := getControlID(name)
     if err != nil {
@@ -167,7 +173,7 @@ func (c *Camera) SetControl(name string, value int32) error {
 	return c.cam.SetControl(id, value)
 }
 
-// Return the appropriate ControlID for the control name.
+// getControlID returns the appropriate ControlID for a user-friendly control name.
 func getControlID(name string) (webcam.ControlID, error) {
     var controls map[string]webcam.ControlID = map[string]webcam.ControlID{
         "focus"                 : 0x009a090a,
