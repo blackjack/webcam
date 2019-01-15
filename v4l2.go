@@ -2,6 +2,7 @@ package webcam
 
 import (
 	"bytes"
+    "fmt"
 	"encoding/binary"
 	"unsafe"
 
@@ -502,7 +503,9 @@ func queryControls(fd uintptr) []control {
 			c.min = query.minimum
 			c.max = query.maximum
 			controls = append(controls, c)
-		}
+		} else {
+            fmt.Printf("id = %08x, Err = %v, %T\n", id, err, err)
+        }
 	}
 	return controls
 }
