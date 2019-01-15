@@ -12,7 +12,7 @@ var device = flag.String("input", "/dev/video0", "Input video device")
 
 func main() {
     flag.Parse()
-    cam, err := webcam.Open("/dev/video0")
+    cam, err := webcam.Open(*device)
     if err != nil {
         panic(err.Error())
     }
