@@ -105,7 +105,8 @@ func decodeMJPEG(f []byte) (image.Image, error) {
 		// Insert the default Huffman table before the start
 		// of the scan data.
 		ins := s[0]
-		buf = bytes.NewBuffer(f[:ins])
+		buf = new(bytes.Buffer)
+		buf.Write(f[:ins])
 		buf.Write(default_dht)
 		buf.Write(f[ins:])
 	} else {
