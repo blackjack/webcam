@@ -477,7 +477,7 @@ func queryControls(fd uintptr) []control {
 	var err error
 	// Don't use V42L_CID_BASE since it is the same as brightness.
 	var id uint32
-	for err != ioctl.ErrEINVAL {
+	for err == nil {
 		id |= V4L2_CTRL_FLAG_NEXT_CTRL
 		query := &v4l2_queryctrl{}
 		query.id = id
@@ -503,9 +503,7 @@ func queryControls(fd uintptr) []control {
 			c.min = query.minimum
 			c.max = query.maximum
 			controls = append(controls, c)
-		} else {
-            fmt.Printf("id = %08x, Err = %v, %T\n", id, err, err)
-        }
+		}
 	}
 	return controls
 }
