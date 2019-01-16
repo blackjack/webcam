@@ -3,7 +3,6 @@ package webcam
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"unsafe"
 
 	"github.com/aamcrae/webcam/ioctl"
