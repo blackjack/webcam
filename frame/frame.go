@@ -1,4 +1,5 @@
-package cam
+// package frame wraps raw webcam frames as an image.
+package frame
 
 import (
 	"fmt"

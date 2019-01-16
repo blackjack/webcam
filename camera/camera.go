@@ -1,10 +1,10 @@
-// package cam is an snapshot interface to a webcam.
-// Still frames are returned as an image.Image.
-package cam
+// package camera is an snapshot interface to a webcam.
+package camera
 
 import (
 	"fmt"
 
+	"github.com/aamcrae/imageserver/frame"
 	"github.com/aamcrae/webcam"
 )
 
@@ -19,13 +19,13 @@ type Camera struct {
 	Height   int
 	Format   string
 	Timeout  uint32
-	newFrame func(int, int, []byte, func()) (Frame, error)
+	newFrame func(int, int, []byte, func()) (frame.Frame, error)
 	stop     chan struct{}
 	stream   chan snapshot
 }
 
-// OpenCamera opens the webcam and creates the channels ready for use.
-func OpenCamera(name string) (*Camera, error) {
+// Open opens the webcam and creates the channels ready for use.
+func Open(name string) (*Camera, error) {
 	c, err := webcam.Open(name)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func (c *Camera) Init(format string, resolution string) error {
 		return fmt.Errorf("Camera does not support this format: %s", format)
 	}
 	var err error
-	if c.newFrame, err = GetFramer(format); err != nil {
+	if c.newFrame, err = frame.GetFramer(format); err != nil {
 		return err
 	}
 
@@ -97,7 +97,7 @@ func (c *Camera) Init(format string, resolution string) error {
 }
 
 // GetFrame returns one frame from the camera.
-func (c *Camera) GetFrame() (Frame, error) {
+func (c *Camera) GetFrame() (frame.Frame, error) {
 	snap, ok := <-c.stream
 	if !ok {
 		return nil, fmt.Errorf("No frame received")

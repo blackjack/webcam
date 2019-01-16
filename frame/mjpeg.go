@@ -1,4 +1,4 @@
-package cam
+package frame
 
 import (
 	"bytes"

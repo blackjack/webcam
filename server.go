@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aamcrae/imageserver/cam"
+	"github.com/aamcrae/imageserver/camera"
 )
 
 var port = flag.Int("port", 8080, "Web server port number")
@@ -30,7 +30,7 @@ func main() {
 	if *startDelay != 0 {
 		time.Sleep(time.Duration(*startDelay) * time.Second)
 	}
-	cm, err := cam.OpenCamera(*device)
+	cm, err := camera.Open(*device)
 	if err != nil {
 		log.Fatalf("%s: %v", *device, err)
 	}
@@ -69,7 +69,7 @@ func main() {
 	log.Fatal(s.ListenAndServe())
 }
 
-func readImage(cm *cam.Camera, w http.ResponseWriter, r *http.Request) {
+func readImage(cm *camera.Camera, w http.ResponseWriter, r *http.Request) {
 	if *verbose {
 		log.Printf("URL request: %v", r.URL)
 	}
