@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-    "github.com/aamcrae/imageserver/cam"
+	"github.com/aamcrae/imageserver/cam"
 )
 
 var port = flag.Int("port", 8080, "Web server port number")
@@ -39,25 +39,25 @@ func main() {
 		log.Fatalf("Init failed: %v", err)
 	}
 	// Initialise camera controls.
-    if len(*controls) != 0 {
-	    for _, control := range strings.Split(*controls, ",") {
-		    // If no parameter, assume bool and set to true.
-		    s := strings.Split(control, "=")
-		    if len(s) == 1 {
-			    s = append(s, "true")
-		    }
-		    if len(s) != 2 {
-			    log.Fatalf("Bad control option: %s", control)
-		    }
-		    val, err := strconv.Atoi(s[1])
-		    if err != nil {
-			    log.Fatalf("Bad control value: %s (%v)", control, err)
-		    }
-		    if err = cm.SetControl(s[0], int32(val)); err != nil {
-			    log.Fatalf("SetControl error: %s (%v)", control, err)
-		    }
-	    }
-    }
+	if len(*controls) != 0 {
+		for _, control := range strings.Split(*controls, ",") {
+			// If no parameter, assume bool and set to true.
+			s := strings.Split(control, "=")
+			if len(s) == 1 {
+				s = append(s, "true")
+			}
+			if len(s) != 2 {
+				log.Fatalf("Bad control option: %s", control)
+			}
+			val, err := strconv.Atoi(s[1])
+			if err != nil {
+				log.Fatalf("Bad control value: %s (%v)", control, err)
+			}
+			if err = cm.SetControl(s[0], int32(val)); err != nil {
+				log.Fatalf("SetControl error: %s (%v)", control, err)
+			}
+		}
+	}
 	http.Handle("/image", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		readImage(cm, w, r)
 	}))

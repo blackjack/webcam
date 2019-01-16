@@ -15,7 +15,7 @@ type FrameYUYV422 struct {
 
 // Register this framer for this format.
 func init() {
-    RegisterFramer("YUYV 4:2:2", newFrameYUYV422)
+	RegisterFramer("YUYV 4:2:2", newFrameYUYV422)
 }
 
 // Wrap a raw webcam frame in a Frame so that it can be used as an image.
