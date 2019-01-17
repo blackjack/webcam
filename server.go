@@ -1,3 +1,4 @@
+// Program that serves jpeg images taken from a webcam.
 package main
 
 import (
@@ -16,8 +17,8 @@ import (
 
 var port = flag.Int("port", 8080, "Web server port number")
 var device = flag.String("input", "/dev/video0", "Input video device")
-var resolution = flag.String("resolution", "800x600", "Selected resolution of camera")
-var format = flag.String("format", "YUYV 4:2:2", "Selected pixel format of camera")
+var resolution = flag.String("resolution", "800x600", "Camera resolution")
+var format = flag.String("format", "YUYV 4:2:2", "Pixel format of camera")
 var controls = flag.String("controls", "focus=190,power_line_frequency=1",
 	"Control parameters for camera")
 var startDelay = flag.Int("delay", 0, "Delay at start (seconds)")

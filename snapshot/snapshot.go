@@ -1,4 +1,4 @@
-// package snapshot is an webcam stills capture module.
+// package snapshot is a webcam stills capture module.
 package snapshot
 
 import (
@@ -60,7 +60,7 @@ func (c *Snapper) Open(device, format, resolution string) error {
 	}
 	c.cam = cam
 	c.stop = make(chan struct{}, 1)
- 	c.stream = make(chan snap, 0)
+	c.stream = make(chan snap, 0)
 	// Get the supported formats and their descriptions.
 	format_desc := c.cam.GetSupportedFormats()
 	var pixelFormat webcam.PixelFormat
