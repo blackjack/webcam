@@ -1,5 +1,5 @@
-// package camera is an snapshot interface to a webcam.
-package camera
+// package snapshot is an webcam stills capture module.
+package snapshot
 
 import (
 	"fmt"
@@ -8,47 +8,59 @@ import (
 	"github.com/aamcrae/webcam"
 )
 
-type snapshot struct {
+const (
+	defaultTimeout = 5
+	defaultBuffers = 16
+)
+
+type snap struct {
 	frame []byte
 	index uint32
 }
 
-type Camera struct {
+type Snapper struct {
 	cam      *webcam.Webcam
 	Width    int
 	Height   int
 	Format   string
 	Timeout  uint32
+	Buffers  uint32
 	newFrame func(int, int, []byte, func()) (frame.Frame, error)
 	stop     chan struct{}
-	stream   chan snapshot
+	stream   chan snap
 }
 
-// Open opens the webcam and creates the channels ready for use.
-func Open(name string) (*Camera, error) {
-	c, err := webcam.Open(name)
-	if err != nil {
-		return nil, err
-	}
-	camera := &Camera{cam: c, Timeout: 5}
-	camera.stop = make(chan struct{}, 1)
-	camera.stream = make(chan snapshot, 0)
-	return camera, nil
+// NewSnapper creates a new Snapper.
+func NewSnapper() *Snapper {
+	return &Snapper{Timeout: defaultTimeout, Buffers: defaultBuffers}
 }
 
 // Close releases all current frames and shuts down the webcam.
-func (c *Camera) Close() {
-	c.stop <- struct{}{}
-	// Flush any remaining frames.
-	for f := range c.stream {
-		c.cam.ReleaseFrame(f.index)
+func (c *Snapper) Close() {
+	if c.cam != nil {
+		c.stop <- struct{}{}
+		// Flush any remaining frames.
+		for f := range c.stream {
+			c.cam.ReleaseFrame(f.index)
+		}
+		c.cam.StopStreaming()
+		c.cam.Close()
+		c.cam = nil
 	}
-	c.cam.StopStreaming()
-	c.cam.Close()
 }
 
-// Init initialises the webcam ready for use, and begins streaming.
-func (c *Camera) Init(format string, resolution string) error {
+// Open initialises the webcam ready for use, and begins streaming.
+func (c *Snapper) Open(device, format, resolution string) error {
+	if c.cam != nil {
+		c.Close()
+	}
+	cam, err := webcam.Open(device)
+	if err != nil {
+		return err
+	}
+	c.cam = cam
+	c.stop = make(chan struct{}, 1)
+ 	c.stream = make(chan snap, 0)
 	// Get the supported formats and their descriptions.
 	format_desc := c.cam.GetSupportedFormats()
 	var pixelFormat webcam.PixelFormat
@@ -61,9 +73,8 @@ func (c *Camera) Init(format string, resolution string) error {
 		}
 	}
 	if !found {
-		return fmt.Errorf("Camera does not support this format: %s", format)
+		return fmt.Errorf("%s: unsupported format: %s", device, format)
 	}
-	var err error
 	if c.newFrame, err = frame.GetFramer(format); err != nil {
 		return err
 	}
@@ -76,7 +87,7 @@ func (c *Camera) Init(format string, resolution string) error {
 
 	sz, ok := sizeMap[resolution]
 	if !ok {
-		return fmt.Errorf("Unsupported resolution: %s (allowed: %v)", resolution, sizeMap)
+		return fmt.Errorf("%s: unsupported resolution: %s (allowed: %v)", device, resolution, sizeMap)
 	}
 
 	_, w, h, err := c.cam.SetImageFormat(pixelFormat, uint32(sz.MaxWidth), uint32(sz.MaxHeight))
@@ -87,7 +98,7 @@ func (c *Camera) Init(format string, resolution string) error {
 	c.Width = int(w)
 	c.Height = int(h)
 
-	c.cam.SetBufferCount(16)
+	c.cam.SetBufferCount(c.Buffers)
 	c.cam.SetAutoWhiteBalance(true)
 	if err := c.cam.StartStreaming(); err != nil {
 		return err
@@ -96,8 +107,8 @@ func (c *Camera) Init(format string, resolution string) error {
 	return nil
 }
 
-// GetFrame returns one frame from the camera.
-func (c *Camera) GetFrame() (frame.Frame, error) {
+// Snap returns one frame from the camera.
+func (c *Snapper) Snap() (frame.Frame, error) {
 	snap, ok := <-c.stream
 	if !ok {
 		return nil, fmt.Errorf("No frame received")
@@ -109,7 +120,7 @@ func (c *Camera) GetFrame() (frame.Frame, error) {
 
 // capture continually reads frames and either discards them or
 // sends them to a channel that is ready to receive them.
-func (c *Camera) capture() {
+func (c *Snapper) capture() {
 	for {
 		err := c.cam.WaitForFrame(c.Timeout)
 
@@ -127,7 +138,7 @@ func (c *Camera) capture() {
 		}
 		select {
 		// Only executed if stream is ready to receive.
-		case c.stream <- snapshot{frame, index}:
+		case c.stream <- snap{frame, index}:
 		case <-c.stop:
 			// Finish up.
 			c.cam.ReleaseFrame(index)
@@ -140,7 +151,7 @@ func (c *Camera) capture() {
 }
 
 // Query returns a map of the supported formats and resolutions.
-func (c *Camera) Query() map[string][]string {
+func (c *Snapper) Query() map[string][]string {
 	m := map[string][]string{}
 	formats := c.cam.GetSupportedFormats()
 	for f, fs := range formats {
@@ -156,34 +167,11 @@ func (c *Camera) Query() map[string][]string {
 }
 
 // GetControl returns the current value of a camera control.
-func (c *Camera) GetControl(name string) (int32, error) {
-	id, err := getControlID(name)
-	if err != nil {
-		return 0, err
-	}
+func (c *Snapper) GetControl(id webcam.ControlID) (int32, error) {
 	return c.cam.GetControl(id)
 }
 
 // SetControl sets the selected camera control.
-func (c *Camera) SetControl(name string, value int32) error {
-	id, err := getControlID(name)
-	if err != nil {
-		return err
-	}
+func (c *Snapper) SetControl(id webcam.ControlID, value int32) error {
 	return c.cam.SetControl(id, value)
-}
-
-// getControlID returns the appropriate ControlID for a user-friendly control name.
-func getControlID(name string) (webcam.ControlID, error) {
-	var controls map[string]webcam.ControlID = map[string]webcam.ControlID{
-		"focus":                0x009a090a,
-		"power_line_frequency": 0x00980918,
-		"brightness":           0x00980900,
-		"contrast":             0x00980901,
-	}
-	id, ok := controls[name]
-	if !ok {
-		return 0, fmt.Errorf("%s: unknown control")
-	}
-	return id, nil
 }

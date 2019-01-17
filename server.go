@@ -10,7 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aamcrae/imageserver/camera"
+	"github.com/aamcrae/imageserver/snapshot"
+	"github.com/aamcrae/webcam"
 )
 
 var port = flag.Int("port", 8080, "Web server port number")
@@ -22,6 +23,13 @@ var controls = flag.String("controls", "focus=190,power_line_frequency=1",
 var startDelay = flag.Int("delay", 0, "Delay at start (seconds)")
 var verbose = flag.Bool("v", false, "Log more information")
 
+var cnames map[string]webcam.ControlID = map[string]webcam.ControlID{
+	"focus":                0x009a090a,
+	"power_line_frequency": 0x00980918,
+	"brightness":           0x00980900,
+	"contrast":             0x00980901,
+}
+
 func init() {
 	flag.Parse()
 }
@@ -30,30 +38,27 @@ func main() {
 	if *startDelay != 0 {
 		time.Sleep(time.Duration(*startDelay) * time.Second)
 	}
-	cm, err := camera.Open(*device)
-	if err != nil {
+	cm := snapshot.NewSnapper()
+	if err := cm.Open(*device, *format, *resolution); err != nil {
 		log.Fatalf("%s: %v", *device, err)
 	}
 	defer cm.Close()
-	if err := cm.Init(*format, *resolution); err != nil {
-		log.Fatalf("Init failed: %v", err)
-	}
-	// Initialise camera controls.
+	// Set camera controls.
 	if len(*controls) != 0 {
 		for _, control := range strings.Split(*controls, ",") {
-			// If no parameter, assume bool and set to true.
 			s := strings.Split(control, "=")
-			if len(s) == 1 {
-				s = append(s, "true")
-			}
 			if len(s) != 2 {
 				log.Fatalf("Bad control option: %s", control)
+			}
+			id, ok := cnames[s[0]]
+			if !ok {
+				log.Fatalf("%s: Unknown control", s[0])
 			}
 			val, err := strconv.Atoi(s[1])
 			if err != nil {
 				log.Fatalf("Bad control value: %s (%v)", control, err)
 			}
-			if err = cm.SetControl(s[0], int32(val)); err != nil {
+			if err = cm.SetControl(id, int32(val)); err != nil {
 				log.Fatalf("SetControl error: %s (%v)", control, err)
 			}
 		}
@@ -69,11 +74,11 @@ func main() {
 	log.Fatal(s.ListenAndServe())
 }
 
-func readImage(cm *camera.Camera, w http.ResponseWriter, r *http.Request) {
+func readImage(cm *snapshot.Snapper, w http.ResponseWriter, r *http.Request) {
 	if *verbose {
 		log.Printf("URL request: %v", r.URL)
 	}
-	frame, err := cm.GetFrame()
+	frame, err := cm.Snap()
 	if err != nil {
 		log.Fatalf("Getframe: %v", err)
 	}
