@@ -77,11 +77,11 @@ func readImage(cm *camera.Camera, w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalf("Getframe: %v", err)
 	}
+	defer frame.Release()
 	w.Header().Set("Content-Type", "image/jpeg")
 	if err := jpeg.Encode(w, frame, nil); err != nil {
 		log.Printf("Error writing image: %v\n", err)
 	} else if *verbose {
 		log.Printf("Wrote image successfully\n")
 	}
-	frame.Release()
 }
