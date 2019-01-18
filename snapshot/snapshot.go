@@ -22,7 +22,7 @@ type Snapper struct {
 	cam      *webcam.Webcam
 	Width    int
 	Height   int
-	Format   string
+	Format	 frame.FourCC
 	Timeout  uint32
 	Buffers  uint32
 	newFrame func(int, int, []byte, func()) (frame.Frame, error)
@@ -50,7 +50,11 @@ func (c *Snapper) Close() {
 }
 
 // Open initialises the webcam ready for use, and begins streaming.
-func (c *Snapper) Open(device, format, resolution string) error {
+func (c *Snapper) Open(device string, format frame.FourCC, x, y int) error {
+	pf, err := frame.FourCCToPixelFormat(format)
+	if err != nil {
+		return err
+	}
 	if c.cam != nil {
 		c.Close()
 	}
@@ -62,41 +66,35 @@ func (c *Snapper) Open(device, format, resolution string) error {
 	c.stop = make(chan struct{}, 1)
 	c.stream = make(chan snap, 0)
 	// Get the supported formats and their descriptions.
-	format_desc := c.cam.GetSupportedFormats()
-	var pixelFormat webcam.PixelFormat
-	var found bool
-	for k, v := range format_desc {
-		if v == format {
-			found = true
-			pixelFormat = k
-			break
-		}
-	}
-	if !found {
+	mf := c.cam.GetSupportedFormats()
+	_, ok := mf[pf]
+	if !ok {
 		return fmt.Errorf("%s: unsupported format: %s", device, format)
 	}
 	if c.newFrame, err = frame.GetFramer(format); err != nil {
 		return err
 	}
-
-	// Build a map of resolution names from the description.
-	sizeMap := make(map[string]webcam.FrameSize)
-	for _, value := range c.cam.GetSupportedFrameSizes(pixelFormat) {
-		sizeMap[value.GetString()] = value
+	var found bool
+	for _, value := range c.cam.GetSupportedFrameSizes(pf) {
+		if Match(value, x, y) {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return fmt.Errorf("%s: unsupported resolution: %dx%d", device, x, y)
 	}
 
-	sz, ok := sizeMap[resolution]
-	if !ok {
-		return fmt.Errorf("%s: unsupported resolution: %s (allowed: %v)", device, resolution, sizeMap)
-	}
-
-	_, w, h, err := c.cam.SetImageFormat(pixelFormat, uint32(sz.MaxWidth), uint32(sz.MaxHeight))
+	pfs, w, h, err := c.cam.SetImageFormat(pf, uint32(x), uint32(y))
 
 	if err != nil {
 		return err
 	}
 	c.Width = int(w)
 	c.Height = int(h)
+	if pfs != pf || x != c.Width || y != c.Height {
+		fmt.Printf("Asked for %08x %dx%d, got %08x %dx%d\n", pf, x, y, pfs, c.Width, c.Height)
+	}
 
 	c.cam.SetBufferCount(c.Buffers)
 	c.cam.SetAutoWhiteBalance(true)
@@ -150,22 +148,6 @@ func (c *Snapper) capture() {
 	}
 }
 
-// Query returns a map of the supported formats and resolutions.
-func (c *Snapper) Query() map[string][]string {
-	m := map[string][]string{}
-	formats := c.cam.GetSupportedFormats()
-	for f, fs := range formats {
-		r := []string{}
-		for _, value := range c.cam.GetSupportedFrameSizes(f) {
-			if value.StepWidth == 0 && value.StepHeight == 0 {
-				r = append(r, fmt.Sprintf("%dx%d", value.MaxWidth, value.MaxHeight))
-			}
-		}
-		m[fs] = r
-	}
-	return m
-}
-
 // GetControl returns the current value of a camera control.
 func (c *Snapper) GetControl(id webcam.ControlID) (int32, error) {
 	return c.cam.GetControl(id)
@@ -174,4 +156,18 @@ func (c *Snapper) GetControl(id webcam.ControlID) (int32, error) {
 // SetControl sets the selected camera control.
 func (c *Snapper) SetControl(id webcam.ControlID, value int32) error {
 	return c.cam.SetControl(id, value)
+}
+
+// Return true if frame size can accomodate request.
+func Match(fs webcam.FrameSize, x, y int) bool {
+	return canFit(fs.MinWidth, fs.MaxWidth, fs.StepWidth, uint32(x)) &&
+		   canFit(fs.MinHeight, fs.MaxHeight, fs.StepHeight, uint32(y))
+}
+
+func canFit(min, max, step, val uint32) bool {
+	// Fixed size exact match.
+	if min == max && step == 0 && val == min {
+		return true
+	}
+	return step != 0 && val >= val && val <= max && ((val - min) % step) == 0
 }

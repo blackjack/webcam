@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aamcrae/imageserver/frame"
 	"github.com/aamcrae/imageserver/snapshot"
 	"github.com/aamcrae/webcam"
 )
@@ -18,7 +19,7 @@ import (
 var port = flag.Int("port", 8080, "Web server port number")
 var device = flag.String("input", "/dev/video0", "Input video device")
 var resolution = flag.String("resolution", "800x600", "Camera resolution")
-var format = flag.String("format", "YUYV 4:2:2", "Pixel format of camera")
+var format = flag.String("format", "YUYV", "Pixel format of camera")
 var controls = flag.String("controls", "focus=190,power_line_frequency=1",
 	"Control parameters for camera")
 var startDelay = flag.Int("delay", 0, "Delay at start (seconds)")
@@ -31,16 +32,25 @@ var cnames map[string]webcam.ControlID = map[string]webcam.ControlID{
 	"contrast":             0x00980901,
 }
 
-func init() {
-	flag.Parse()
-}
-
 func main() {
+	flag.Parse()
+	s := strings.Split(*resolution, "x")
+	if len(s) != 2 {
+		log.Fatalf("%s: Illegal resolution", *resolution)
+	}
+	x, err := strconv.Atoi(s[0])
+	if err != nil {
+		log.Fatalf("%s: illegal width", s[0], err)
+	}
+	y, err := strconv.Atoi(s[1])
+	if err != nil {
+		log.Fatalf("%s: illegal height", s[1], err)
+	}
 	if *startDelay != 0 {
 		time.Sleep(time.Duration(*startDelay) * time.Second)
 	}
 	cm := snapshot.NewSnapper()
-	if err := cm.Open(*device, *format, *resolution); err != nil {
+	if err := cm.Open(*device, frame.FourCC(*format), x, y); err != nil {
 		log.Fatalf("%s: %v", *device, err)
 	}
 	defer cm.Close()
@@ -71,8 +81,8 @@ func main() {
 	if *verbose {
 		log.Printf("Starting server on %s", url)
 	}
-	s := &http.Server{Addr: url}
-	log.Fatal(s.ListenAndServe())
+	server := &http.Server{Addr: url}
+	log.Fatal(server.ListenAndServe())
 }
 
 func readImage(cm *snapshot.Snapper, w http.ResponseWriter, r *http.Request) {
