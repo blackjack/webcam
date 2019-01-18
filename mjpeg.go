@@ -8,7 +8,7 @@ import (
 	"image/jpeg"
 )
 
-type FrameMJPEG struct {
+type fMJPEG struct {
 	img     image.Image
 	release func()
 }
@@ -72,13 +72,17 @@ var default_dht []byte = []byte{
 
 // Register this framer for this format.
 func init() {
-	RegisterFramer("MJPG", newFrameMJPEG)
+	RegisterFramer("MJPG", newMJPGFramer)
+}
+
+func newMJPGFramer(w, h int) (func ([]byte, func()) (Frame, error)) {
+	return mjpegFramer
 }
 
 // Wrap a mjpeg block in a Frame so that it can be used as an image.
 // The standard jpeg decoding does not work if there are no Huffman tables,
 // so check the frame and add a default table if required.
-func newFrameMJPEG(x int, y int, f []byte, rel func()) (Frame, error) {
+func mjpegFramer(f []byte, rel func()) (Frame, error) {
 	img, err := decodeMJPEG(f)
 	if err != nil {
 		if rel != nil {
@@ -86,7 +90,7 @@ func newFrameMJPEG(x int, y int, f []byte, rel func()) (Frame, error) {
 		}
 		return nil, err
 	}
-	return &FrameMJPEG{img: img, release: rel}, nil
+	return &fMJPEG{img: img, release: rel}, nil
 }
 
 // decodeMJPEG decodes the frame into an image.
@@ -115,20 +119,20 @@ func decodeMJPEG(f []byte) (image.Image, error) {
 	return jpeg.Decode(buf)
 }
 
-func (f *FrameMJPEG) ColorModel() color.Model {
+func (f *fMJPEG) ColorModel() color.Model {
 	return f.img.ColorModel()
 }
 
-func (f *FrameMJPEG) Bounds() image.Rectangle {
+func (f *fMJPEG) Bounds() image.Rectangle {
 	return f.img.Bounds()
 }
 
-func (f *FrameMJPEG) At(x, y int) color.Color {
+func (f *fMJPEG) At(x, y int) color.Color {
 	return f.img.At(x, y)
 }
 
 // Done with frame, release back to camera (if required).
-func (f *FrameMJPEG) Release() {
+func (f *fMJPEG) Release() {
 	if f.release != nil {
 		f.release()
 	}
