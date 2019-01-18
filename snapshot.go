@@ -20,9 +20,6 @@ type snap struct {
 
 type Snapper struct {
 	cam      *webcam.Webcam
-	Width    int
-	Height   int
-	Format	 frame.FourCC
 	Timeout  uint32
 	Buffers  uint32
 	framer func([]byte, func()) (frame.Frame, error)
@@ -156,9 +153,9 @@ func (c *Snapper) SetControl(id webcam.ControlID, value int32) error {
 }
 
 // Return true if frame size can accomodate request.
-func Match(fs webcam.FrameSize, x, y int) bool {
-	return canFit(fs.MinWidth, fs.MaxWidth, fs.StepWidth, uint32(x)) &&
-		   canFit(fs.MinHeight, fs.MaxHeight, fs.StepHeight, uint32(y))
+func Match(fs webcam.FrameSize, w, h int) bool {
+	return canFit(fs.MinWidth, fs.MaxWidth, fs.StepWidth, uint32(w)) &&
+		   canFit(fs.MinHeight, fs.MaxHeight, fs.StepHeight, uint32(h))
 }
 
 func canFit(min, max, step, val uint32) bool {
