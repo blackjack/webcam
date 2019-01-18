@@ -15,11 +15,11 @@ type Frame interface {
 	Release()
 }
 
-var framerFactoryMap = map[FourCC]func (int, int) (func([]byte, func()) (Frame, error)) {}
+var framerFactoryMap = map[FourCC]func(int, int) func([]byte, func()) (Frame, error){}
 
 // RegisterFramer registers a framer factory for a format.
 // Note that only one handler can be registered for any single format.
-func RegisterFramer(format FourCC, factory func(int, int) (func ([]byte, func()) (Frame, error))) {
+func RegisterFramer(format FourCC, factory func(int, int) func([]byte, func()) (Frame, error)) {
 	framerFactoryMap[format] = factory
 }
 
@@ -46,5 +46,5 @@ func FourCCToPixelFormat(f FourCC) (webcam.PixelFormat, error) {
 	if len(f) != 4 {
 		return 0, fmt.Errorf("%s: Illegal FourCC", f)
 	}
-	return webcam.PixelFormat(uint32(f[0]) | uint32(f[1]) << 8 | uint32(f[2]) << 16 | uint32(f[3]) << 24), nil
+	return webcam.PixelFormat(uint32(f[0]) | uint32(f[1])<<8 | uint32(f[2])<<16 | uint32(f[3])<<24), nil
 }

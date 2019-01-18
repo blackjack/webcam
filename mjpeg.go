@@ -75,7 +75,7 @@ func init() {
 	RegisterFramer("MJPG", newMJPGFramer)
 }
 
-func newMJPGFramer(w, h int) (func ([]byte, func()) (Frame, error)) {
+func newMJPGFramer(w, h int) func([]byte, func()) (Frame, error) {
 	return mjpegFramer
 }
 

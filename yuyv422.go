@@ -10,7 +10,7 @@ import (
 type fYUYV422 struct {
 	model   color.Model
 	b       image.Rectangle
-	width	int
+	width   int
 	frame   []byte
 	release func()
 }
@@ -22,7 +22,7 @@ func init() {
 	RegisterFramer("YUYV", newFramerYUYV422)
 }
 
-func newFramerYUYV422(w, h int) func ([]byte, func()) (Frame, error) {
+func newFramerYUYV422(w, h int) func([]byte, func()) (Frame, error) {
 	var size, bw int
 	if *padded {
 		bw = (w + 31) &^ 31
@@ -55,7 +55,7 @@ func (f *fYUYV422) Bounds() image.Rectangle {
 }
 
 func (f *fYUYV422) At(x, y int) color.Color {
-	index := f.width * y * 2 + (x&^1) * 2
+	index := f.width*y*2 + (x&^1)*2
 	if x&1 == 0 {
 		return color.YCbCr{f.frame[index], f.frame[index+1], f.frame[index+3]}
 	} else {

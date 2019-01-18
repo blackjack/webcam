@@ -9,7 +9,7 @@ import (
 type fBGR3 struct {
 	model   color.Model
 	b       image.Rectangle
-	width		int
+	width   int
 	frame   []byte
 	release func()
 }
@@ -20,7 +20,7 @@ func init() {
 }
 
 // Return a function that is used as a framer for this format.
-func newFramerBGR3(w, h int) func ([]byte, func()) (Frame, error) {
+func newFramerBGR3(w, h int) func([]byte, func()) (Frame, error) {
 	var size, bw int
 	if *padded {
 		bw = (w + 31) &^ 31
@@ -53,8 +53,8 @@ func (f *fBGR3) Bounds() image.Rectangle {
 }
 
 func (f *fBGR3) At(x, y int) color.Color {
-	i := f.width * y * 3 + x * 3
-	return color.RGBA{f.frame[i + 2], f.frame[i + 1], f.frame[i], 0xFF}
+	i := f.width*y*3 + x*3
+	return color.RGBA{f.frame[i+2], f.frame[i+1], f.frame[i], 0xFF}
 }
 
 // Done with frame, release back to camera (if required).
