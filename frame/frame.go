@@ -15,18 +15,18 @@ type Frame interface {
 	Release()
 }
 
-var frameHandlers = map[FourCC]func(int, int, []byte, func()) (Frame, error){}
+var framerFactoryMap = map[FourCC]func (int, int) (func([]byte, func()) (Frame, error)) {}
 
-// RegisterFramer registers a frame handler for a format.
+// RegisterFramer registers a framer factory for a format.
 // Note that only one handler can be registered for any single format.
-func RegisterFramer(format FourCC, handler func(int, int, []byte, func()) (Frame, error)) {
-	frameHandlers[format] = handler
+func RegisterFramer(format FourCC, factory func(int, int) (func ([]byte, func()) (Frame, error))) {
+	framerFactoryMap[format] = factory
 }
 
 // GetFramer returns a function that wraps the frame for this format.
-func GetFramer(format FourCC) (func(int, int, []byte, func()) (Frame, error), error) {
-	if f, ok := frameHandlers[format]; ok {
-		return f, nil
+func GetFramer(format FourCC, w, h int) (func([]byte, func()) (Frame, error), error) {
+	if factory, ok := framerFactoryMap[format]; ok {
+		return factory(w, h), nil
 	}
 	return nil, fmt.Errorf("No handler for format '%s'", format)
 }

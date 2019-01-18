@@ -7,18 +7,23 @@ import (
 	"image/jpeg"
 )
 
-type FrameJPEG struct {
+type fJPEG struct {
 	img     image.Image
 	release func()
 }
 
 // Register this framer for this format.
 func init() {
-	RegisterFramer("JPEG", newFrameJPEG)
+	RegisterFramer("JPEG", newJPEGFramer)
+}
+
+// Return a framer for JPEG.
+func newJPEGFramer(w, h int) (func ([]byte, func()) (Frame, error)) {
+	return jpegFramer
 }
 
 // Wrap a jpeg block in a Frame so that it can be used as an image.
-func newFrameJPEG(x int, y int, f []byte, rel func()) (Frame, error) {
+func jpegFramer(f []byte, rel func()) (Frame, error) {
 	img, err := jpeg.Decode(bytes.NewBuffer(f))
 	if err != nil {
 		if rel != nil {
@@ -26,23 +31,23 @@ func newFrameJPEG(x int, y int, f []byte, rel func()) (Frame, error) {
 		}
 		return nil, err
 	}
-	return &FrameJPEG{img: img, release: rel}, nil
+	return &fJPEG{img: img, release: rel}, nil
 }
 
-func (f *FrameJPEG) ColorModel() color.Model {
+func (f *fJPEG) ColorModel() color.Model {
 	return f.img.ColorModel()
 }
 
-func (f *FrameJPEG) Bounds() image.Rectangle {
+func (f *fJPEG) Bounds() image.Rectangle {
 	return f.img.Bounds()
 }
 
-func (f *FrameJPEG) At(x, y int) color.Color {
+func (f *fJPEG) At(x, y int) color.Color {
 	return f.img.At(x, y)
 }
 
 // Done with frame, release back to camera (if required).
-func (f *FrameJPEG) Release() {
+func (f *fJPEG) Release() {
 	if f.release != nil {
 		f.release()
 	}

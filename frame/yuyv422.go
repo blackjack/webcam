@@ -7,49 +7,55 @@ import (
 	"image/color"
 )
 
-type FrameYUYV422 struct {
+type fYUYV422 struct {
 	model   color.Model
 	b       image.Rectangle
-	bw		int
+	width	int
 	frame   []byte
 	release func()
 }
 
 var padded = flag.Bool("padded", false, "Frame has padding")
 
-// Register this framer for this format.
+// Register a framer factory for this format.
 func init() {
-	RegisterFramer("YUYV", newFrameYUYV422)
+	RegisterFramer("YUYV", newFramerYUYV422)
+}
+
+func newFramerYUYV422(w, h int) func ([]byte, func()) (Frame, error) {
+	var size, bw int
+	if *padded {
+		bw = (w + 31) &^ 31
+		size = 2 * bw * ((h + 15) &^ 15)
+	} else {
+		size = 2 * h * w
+	}
+	return func(b []byte, rel func()) (Frame, error) {
+		return frameYUYV422(size, bw, w, h, b, rel)
+	}
 }
 
 // Wrap a raw webcam frame in a Frame so that it can be used as an image.
-func newFrameYUYV422(x int, y int, f []byte, rel func()) (Frame, error) {
-	bw := x
-	bh := y
-	if *padded {
-		bw = (x + 31) &^ 31
-		bh = (y + 15) &^ 15
-	}
-	expLen := 2 * bw * bh
-	if len(f) != expLen {
+func frameYUYV422(size, bw, w, h int, b []byte, rel func()) (Frame, error) {
+	if len(b) != size {
 		if rel != nil {
 			defer rel()
 		}
-		return nil, fmt.Errorf("Wrong frame length (exp: %d, read %d)", expLen, len(f))
+		return nil, fmt.Errorf("Wrong frame length (exp: %d, read %d)", size, len(b))
 	}
-	return &FrameYUYV422{model: color.YCbCrModel, b: image.Rect(0, 0, x, y), bw: bw, frame: f, release: rel}, nil
+	return &fYUYV422{model: color.YCbCrModel, b: image.Rect(0, 0, w, h), width: bw, frame: b, release: rel}, nil
 }
 
-func (f *FrameYUYV422) ColorModel() color.Model {
+func (f *fYUYV422) ColorModel() color.Model {
 	return f.model
 }
 
-func (f *FrameYUYV422) Bounds() image.Rectangle {
+func (f *fYUYV422) Bounds() image.Rectangle {
 	return f.b
 }
 
-func (f *FrameYUYV422) At(x, y int) color.Color {
-	index := f.bw * y * 2 + (x&^1) * 2
+func (f *fYUYV422) At(x, y int) color.Color {
+	index := f.width * y * 2 + (x&^1) * 2
 	if x&1 == 0 {
 		return color.YCbCr{f.frame[index], f.frame[index+1], f.frame[index+3]}
 	} else {
@@ -58,7 +64,7 @@ func (f *FrameYUYV422) At(x, y int) color.Color {
 }
 
 // Done with frame, release back to camera (if required).
-func (f *FrameYUYV422) Release() {
+func (f *fYUYV422) Release() {
 	if f.release != nil {
 		f.release()
 	}

@@ -25,7 +25,7 @@ type Snapper struct {
 	Format	 frame.FourCC
 	Timeout  uint32
 	Buffers  uint32
-	newFrame func(int, int, []byte, func()) (frame.Frame, error)
+	framer func([]byte, func()) (frame.Frame, error)
 	stop     chan struct{}
 	stream   chan snap
 }
@@ -50,7 +50,7 @@ func (c *Snapper) Close() {
 }
 
 // Open initialises the webcam ready for use, and begins streaming.
-func (c *Snapper) Open(device string, format frame.FourCC, x, y int) error {
+func (c *Snapper) Open(device string, format frame.FourCC, w, h int) error {
 	pf, err := frame.FourCCToPixelFormat(format)
 	if err != nil {
 		return err
@@ -71,29 +71,26 @@ func (c *Snapper) Open(device string, format frame.FourCC, x, y int) error {
 	if !ok {
 		return fmt.Errorf("%s: unsupported format: %s", device, format)
 	}
-	if c.newFrame, err = frame.GetFramer(format); err != nil {
-		return err
-	}
 	var found bool
 	for _, value := range c.cam.GetSupportedFrameSizes(pf) {
-		if Match(value, x, y) {
+		if Match(value, w, h) {
 			found = true
 			break
 		}
 	}
 	if !found {
-		return fmt.Errorf("%s: unsupported resolution: %dx%d", device, x, y)
+		return fmt.Errorf("%s: unsupported resolution: %dx%d", device, w, h)
 	}
-
-	pfs, w, h, err := c.cam.SetImageFormat(pf, uint32(x), uint32(y))
+	if c.framer, err = frame.GetFramer(format, w, h); err != nil {
+		return err
+	}
+	npf, nw, nh, err := c.cam.SetImageFormat(pf, uint32(w), uint32(h))
 
 	if err != nil {
 		return err
 	}
-	c.Width = int(w)
-	c.Height = int(h)
-	if pfs != pf || x != c.Width || y != c.Height {
-		fmt.Printf("Asked for %08x %dx%d, got %08x %dx%d\n", pf, x, y, pfs, c.Width, c.Height)
+	if npf != pf || w != int(nw) || h != int(nh) {
+		fmt.Printf("Asked for %08x %dx%d, got %08x %dx%d\n", pf, w, h, npf, nw, nh)
 	}
 
 	c.cam.SetBufferCount(c.Buffers)
@@ -111,7 +108,7 @@ func (c *Snapper) Snap() (frame.Frame, error) {
 	if !ok {
 		return nil, fmt.Errorf("No frame received")
 	}
-	return c.newFrame(c.Width, c.Height, snap.frame, func() {
+	return c.framer(snap.frame, func() {
 		c.cam.ReleaseFrame(snap.index)
 	})
 }
