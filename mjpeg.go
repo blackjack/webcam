@@ -72,7 +72,7 @@ var default_dht []byte = []byte{
 
 // Register this framer for this format.
 func init() {
-	RegisterFramer("Motion-JPEG", newFrameMJPEG)
+	RegisterFramer("MJPG", newFrameMJPEG)
 }
 
 // Wrap a mjpeg block in a Frame so that it can be used as an image.
@@ -155,7 +155,7 @@ func findConfig(f []byte) (map[byte][]int, error) {
 		if l >= len(f)-2 {
 			return nil, fmt.Errorf("unexpected EOF at location %d", l)
 		}
-		l += int((f[l] << 8) + f[l+1])
+		l += (int(f[l]) << 8) + int(f[l+1])
 	}
 	return m, nil
 }
