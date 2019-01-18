@@ -18,7 +18,7 @@ func init() {
 }
 
 // Return a framer for JPEG.
-func newJPEGFramer(w, h int) (func ([]byte, func()) (Frame, error)) {
+func newJPEGFramer(w, h int) func([]byte, func()) (Frame, error) {
 	return jpegFramer
 }
 
