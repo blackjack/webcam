@@ -18,6 +18,14 @@ type Webcam struct {
 	streaming bool
 }
 
+type ControlID uint32
+
+type Control struct {
+	Name string
+	Min  int32
+	Max  int32
+}
+
 // Open a webcam with a given path
 // Checks if device is a v4l2 device and if it is
 // capable to stream video
@@ -124,6 +132,25 @@ func (w *Webcam) SetBufferCount(count uint32) error {
 	}
 	w.bufcount = count
 	return nil
+}
+
+// Get a map of available controls.
+func (w *Webcam) GetControls() map[ControlID]Control {
+	cmap := make(map[ControlID]Control)
+	for _, c := range queryControls(w.fd) {
+		cmap[ControlID(c.id)] = Control{c.name, c.min, c.max}
+	}
+	return cmap
+}
+
+// Get the value of a control.
+func (w *Webcam) GetControl(id ControlID) (int32, error) {
+	return getControl(w.fd, uint32(id))
+}
+
+// Set a control.
+func (w *Webcam) SetControl(id ControlID, value int32) error {
+	return setControl(w.fd, uint32(id), value)
 }
 
 // Start streaming process
