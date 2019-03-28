@@ -3,7 +3,6 @@ package webcam
 import (
 	"bytes"
 	"encoding/binary"
-	"strings"
 	"unsafe"
 
 	"github.com/blackjack/webcam/ioctl"
@@ -20,6 +19,7 @@ const (
 
 type control struct {
 	id     uint32
+	name   string
 	c_type controlType
 	min    int32
 	max    int32
@@ -471,12 +471,12 @@ func setControl(fd uintptr, id uint32, val int32) error {
 	return ioctl.Ioctl(fd, VIDIOC_S_CTRL, uintptr(unsafe.Pointer(ctrl)))
 }
 
-func queryControls(fd uintptr) map[string]control {
-	var controls map[string]control = make(map[string]control)
+func queryControls(fd uintptr) []control {
+	controls := []control{}
 	var err error
 	// Don't use V42L_CID_BASE since it is the same as brightness.
 	var id uint32
-	for err != ioctl.ErrEINVAL {
+	for err == nil {
 		id |= V4L2_CTRL_FLAG_NEXT_CTRL
 		query := &v4l2_queryctrl{}
 		query.id = id
@@ -498,11 +498,10 @@ func queryControls(fd uintptr) map[string]control {
 				c.c_type = c_menu
 			}
 			c.id = id
+			c.name = CToGoString(query.name[:])
 			c.min = query.minimum
 			c.max = query.maximum
-			// Normalise name (' ' -> '_', make lower case).
-			n := strings.Replace(strings.ToLower(CToGoString(query.name[:])), " ", "_", -1)
-			controls[n] = c
+			controls = append(controls, c)
 		}
 	}
 	return controls
