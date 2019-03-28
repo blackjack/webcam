@@ -4,6 +4,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"image/gif"
+	"image/png"
 	"image/jpeg"
 	"log"
 	"net/http"
@@ -41,11 +43,11 @@ func main() {
 	}
 	x, err := strconv.Atoi(s[0])
 	if err != nil {
-		log.Fatalf("%s: illegal width", s[0], err)
+		log.Fatalf("%s: illegal width: %v", s[0], err)
 	}
 	y, err := strconv.Atoi(s[1])
 	if err != nil {
-		log.Fatalf("%s: illegal height", s[1], err)
+		log.Fatalf("%s: illegal height: %v", s[1], err)
 	}
 	if *startDelay != 0 {
 		time.Sleep(time.Duration(*startDelay) * time.Second)
@@ -75,8 +77,27 @@ func main() {
 			}
 		}
 	}
-	http.Handle("/image.jpg", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		publishImage(cm, w, r)
+	var encode func(http.ResponseWriter, frame.Frame) error
+	if strings.HasSuffix(*path, "jpg") || strings.HasSuffix(*path, "jpeg") {
+		encode = encodeJpeg
+	} else if strings.HasSuffix(*path, "png") {
+		encode = encodePNG
+	} else if strings.HasSuffix(*path, "gif") {
+		encode = encodeGIF
+	}
+	http.Handle(fmt.Sprintf("/%s", *path), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if *verbose {
+			log.Printf("URL request: %v", r.URL)
+		}
+		f, err := cm.Snap()
+		if err != nil {
+			log.Fatalf("Getframe: %v", err)
+		}
+		if err := encode(w, f); err != nil {
+			log.Printf("Error writing image: %v\n", err)
+		} else if *verbose {
+			log.Printf("Wrote image successfully\n")
+		}
 	}))
 	url := fmt.Sprintf(":%d", *port)
 	if *verbose {
@@ -86,19 +107,20 @@ func main() {
 	log.Fatal(server.ListenAndServe())
 }
 
-func publishImage(cm *snapshot.Snapper, w http.ResponseWriter, r *http.Request) {
-	if *verbose {
-		log.Printf("URL request: %v", r.URL)
-	}
-	frame, err := cm.Snap()
-	if err != nil {
-		log.Fatalf("Getframe: %v", err)
-	}
-	defer frame.Release()
+func encodeJpeg(w http.ResponseWriter, f frame.Frame) error {
+	defer f.Release()
 	w.Header().Set("Content-Type", "image/jpeg")
-	if err := jpeg.Encode(w, frame, nil); err != nil {
-		log.Printf("Error writing image: %v\n", err)
-	} else if *verbose {
-		log.Printf("Wrote image successfully\n")
-	}
+	return jpeg.Encode(w, f, nil)
+}
+
+func encodePNG(w http.ResponseWriter, f frame.Frame) error {
+	defer f.Release()
+	w.Header().Set("Content-Type", "image/png")
+	return png.Encode(w, f)
+}
+
+func encodeGIF(w http.ResponseWriter, f frame.Frame) error {
+	defer f.Release()
+	w.Header().Set("Content-Type", "image/gif")
+	return gif.Encode(w, f, nil)
 }
