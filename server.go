@@ -17,6 +17,7 @@ import (
 )
 
 var port = flag.Int("port", 8080, "Web server port number")
+var path = flag.String("path", "image.jpg", "Image filename path")
 var device = flag.String("input", "/dev/video0", "Input video device")
 var resolution = flag.String("resolution", "800x600", "Camera resolution")
 var format = flag.String("format", "YUYV", "Pixel format of camera")
@@ -74,8 +75,8 @@ func main() {
 			}
 		}
 	}
-	http.Handle("/image", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		readImage(cm, w, r)
+	http.Handle("/image.jpg", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		publishImage(cm, w, r)
 	}))
 	url := fmt.Sprintf(":%d", *port)
 	if *verbose {
@@ -85,7 +86,7 @@ func main() {
 	log.Fatal(server.ListenAndServe())
 }
 
-func readImage(cm *snapshot.Snapper, w http.ResponseWriter, r *http.Request) {
+func publishImage(cm *snapshot.Snapper, w http.ResponseWriter, r *http.Request) {
 	if *verbose {
 		log.Printf("URL request: %v", r.URL)
 	}
