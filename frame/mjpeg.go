@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/color"
 	"image/jpeg"
+	"runtime"
 )
 
 type fMJPEG struct {
@@ -90,7 +91,11 @@ func mjpegFramer(f []byte, rel func()) (Frame, error) {
 		}
 		return nil, err
 	}
-	return &fMJPEG{img: img, release: rel}, nil
+	fr := &fMJPEG{img: img, release: rel}
+	runtime.SetFinalizer(fr, func(obj Frame) {
+		obj.Release()
+	})
+	return fr, nil
 }
 
 // decodeMJPEG decodes the frame into an image.
@@ -135,6 +140,8 @@ func (f *fMJPEG) At(x, y int) color.Color {
 func (f *fMJPEG) Release() {
 	if f.release != nil {
 		f.release()
+		// Make sure it only gets called once.
+		f.release = nil
 	}
 }
 

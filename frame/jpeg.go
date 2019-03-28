@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"image/jpeg"
+	"runtime"
 )
 
 type fJPEG struct {
@@ -31,7 +32,11 @@ func jpegFramer(f []byte, rel func()) (Frame, error) {
 		}
 		return nil, err
 	}
-	return &fJPEG{img: img, release: rel}, nil
+	fr := &fJPEG{img: img, release: rel}
+	runtime.SetFinalizer(fr, func(obj Frame) {
+		obj.Release()
+	})
+	return fr, nil
 }
 
 func (f *fJPEG) ColorModel() color.Model {
@@ -50,5 +55,7 @@ func (f *fJPEG) At(x, y int) color.Color {
 func (f *fJPEG) Release() {
 	if f.release != nil {
 		f.release()
+		// Make sure it only gets called once.
+		f.release = nil
 	}
 }

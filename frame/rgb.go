@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"runtime"
 )
 
 type fRGB struct {
@@ -55,8 +56,12 @@ func frameRGB(size, bw, w, h, rof, gof, bof int, b []byte, rel func()) (Frame, e
 		}
 		return nil, fmt.Errorf("Wrong frame length (exp: %d, read %d)", size, len(b))
 	}
-	return &fRGB{model: color.RGBAModel, b: image.Rect(0, 0, w, h), width: bw,
-		roffs: rof, goffs: gof, boffs: bof, frame: b, release: rel}, nil
+	f := &fRGB{model: color.RGBAModel, b: image.Rect(0, 0, w, h), width: bw,
+		roffs: rof, goffs: gof, boffs: bof, frame: b, release: rel}
+	runtime.SetFinalizer(f, func(obj Frame) {
+		obj.Release()
+	})
+	return f, nil
 }
 
 func (f *fRGB) ColorModel() color.Model {
@@ -76,5 +81,7 @@ func (f *fRGB) At(x, y int) color.Color {
 func (f *fRGB) Release() {
 	if f.release != nil {
 		f.release()
+		// Make sure it only gets called once.
+		f.release = nil
 	}
 }
