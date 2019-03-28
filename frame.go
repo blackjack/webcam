@@ -10,6 +10,9 @@ import (
 
 type FourCC string
 
+// Release is called when the frame is no longer in use.
+// The implementation may set a finalizer on the frame as a precaution
+// in case Release is not called (which would cause a kernel resource leak).
 type Frame interface {
 	image.Image
 	Release()
