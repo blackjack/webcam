@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"runtime"
 )
 
 type fYUYV422 struct {
@@ -43,7 +44,11 @@ func frameYUYV422(size, bw, w, h int, b []byte, rel func()) (Frame, error) {
 		}
 		return nil, fmt.Errorf("Wrong frame length (exp: %d, read %d)", size, len(b))
 	}
-	return &fYUYV422{model: color.YCbCrModel, b: image.Rect(0, 0, w, h), width: bw, frame: b, release: rel}, nil
+	f := &fYUYV422{model: color.YCbCrModel, b: image.Rect(0, 0, w, h), width: bw, frame: b, release: rel}
+	runtime.SetFinalizer(f, func(obj Frame) {
+		obj.Release()
+	})
+	return f, nil
 }
 
 func (f *fYUYV422) ColorModel() color.Model {
@@ -67,5 +72,7 @@ func (f *fYUYV422) At(x, y int) color.Color {
 func (f *fYUYV422) Release() {
 	if f.release != nil {
 		f.release()
+		// Make sure it only gets called once.
+		f.release = nil
 	}
 }

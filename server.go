@@ -21,7 +21,7 @@ var path = flag.String("path", "image.jpg", "Image filename path")
 var device = flag.String("input", "/dev/video0", "Input video device")
 var resolution = flag.String("resolution", "800x600", "Camera resolution")
 var format = flag.String("format", "YUYV", "Pixel format of camera")
-var controls = flag.String("controls", "focus=190,power_line_frequency=1",
+var controls = flag.String("controls", "",
 	"Control parameters for camera")
 var startDelay = flag.Int("delay", 0, "Delay at start (seconds)")
 var verbose = flag.Bool("v", false, "Log more information")
