@@ -27,8 +27,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aamcrae/imageserver/frame"
-	"github.com/aamcrae/imageserver/snapshot"
+	"github.com/aamcrae/webcam/frame"
+	"github.com/aamcrae/webcam/snapshot"
 	"github.com/aamcrae/webcam"
 )
 
