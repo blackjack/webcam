@@ -288,7 +288,7 @@ func getFrameSize(fd uintptr, index uint32, code uint32) (frameSize FrameSize, e
 	return
 }
 
-func setImageFormat(fd uintptr, formatcode, width, height, stride *uint32) (err error) {
+func setImageFormat(fd uintptr, formatcode, width, height, stride, size *uint32) (err error) {
 
 	format := &v4l2_format{
 		_type: V4L2_BUF_TYPE_VIDEO_CAPTURE,
@@ -327,6 +327,7 @@ func setImageFormat(fd uintptr, formatcode, width, height, stride *uint32) (err 
 	*height = pixReverse.Height
 	*formatcode = pixReverse.Pixelformat
 	*stride = pixReverse.Bytesperline
+	*size = pixReverse.Sizeimage
 
 	return
 

@@ -6,7 +6,7 @@
 // Example usage: go run stdout_streamer.go | vlc -
 package main
 
-import "github.com/blackjack/webcam"
+import "github.com/aamcrae/webcam"
 import "os"
 import "fmt"
 import "sort"
@@ -74,7 +74,7 @@ func main() {
 	choice = readChoice(fmt.Sprintf("Choose format [1-%d]: ", len(frames)))
 	size := frames[choice-1]
 
-	f, w, h, err := cam.SetImageFormat(format, uint32(size.MaxWidth), uint32(size.MaxHeight))
+	f, w, h, _, _, err := cam.SetImageFormat(format, uint32(size.MaxWidth), uint32(size.MaxHeight))
 
 	if err != nil {
 		panic(err.Error())
