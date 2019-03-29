@@ -10,7 +10,8 @@ import (
 type fRGB struct {
 	model   color.Model
 	b       image.Rectangle
-	stride   int
+	stride  int
+	size	int
 	roffs	int
 	goffs	int
 	boffs	int
@@ -25,19 +26,19 @@ func init() {
 }
 
 // Return a function that is used as a framer for RGB3.
-func newFramerRGB3(w, h, stride int) func([]byte, func()) (Frame, error) {
-	return newRGBFramer(w, h, stride, 0, 1, 2)
+func newFramerRGB3(w, h, stride, size int) func([]byte, func()) (Frame, error) {
+	return newRGBFramer(w, h, stride, size, 0, 1, 2)
 }
 
 // Return a function that is used as a framer for BGR3.
-func newFramerBGR3(w, h, stride int) func([]byte, func()) (Frame, error) {
-	return newRGBFramer(w, h, stride, 2, 1, 0)
+func newFramerBGR3(w, h, stride, size int) func([]byte, func()) (Frame, error) {
+	return newRGBFramer(w, h, stride, size, 2, 1, 0)
 }
 
 // Return a function that is used as a generic RGB framer.
-func newRGBFramer(w, h, stride, r, g, b int) func([]byte, func()) (Frame, error) {
+func newRGBFramer(w, h, stride, size, r, g, b int) func([]byte, func()) (Frame, error) {
 	return func(buf []byte, rel func()) (Frame, error) {
-		return frameRGB(h * stride, stride, w, h, r, g, b, buf, rel)
+		return frameRGB(size, stride, w, h, r, g, b, buf, rel)
 	}
 }
 

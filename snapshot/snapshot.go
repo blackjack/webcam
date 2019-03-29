@@ -78,7 +78,7 @@ func (c *Snapper) Open(device string, format frame.FourCC, w, h int) error {
 	if !found {
 		return fmt.Errorf("%s: unsupported resolution: %dx%d", device, w, h)
 	}
-	npf, nw, nh, stride, err := c.cam.SetImageFormat(pf, uint32(w), uint32(h))
+	npf, nw, nh, stride, size, err := c.cam.SetImageFormat(pf, uint32(w), uint32(h))
 
 	if err != nil {
 		return err
@@ -86,7 +86,7 @@ func (c *Snapper) Open(device string, format frame.FourCC, w, h int) error {
 	if npf != pf || w != int(nw) || h != int(nh) {
 		fmt.Printf("Asked for %08x %dx%d, got %08x %dx%d\n", pf, w, h, npf, nw, nh)
 	}
-	if c.framer, err = frame.GetFramer(format, w, h, int(stride)); err != nil {
+	if c.framer, err = frame.GetFramer(format, w, h, int(stride), int(size)); err != nil {
 		return err
 	}
 
