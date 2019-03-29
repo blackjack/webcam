@@ -37,7 +37,7 @@ var device = flag.String("input", "/dev/video0", "Input video device")
 var resolution = flag.String("resolution", "800x600", "Camera resolution")
 var format = flag.String("format", "YUYV", "Pixel format of camera")
 var controls = flag.String("controls", "",
-	"Control parameters for camera")
+	"Control parameters for camera (use --controls=list to list controls)")
 var startDelay = flag.Int("delay", 0, "Delay at start (seconds)")
 var verbose = flag.Bool("v", false, "Log more information")
 
@@ -46,6 +46,12 @@ var cnames map[string]webcam.ControlID = map[string]webcam.ControlID{
 	"power_line_frequency": 0x00980918,
 	"brightness":           0x00980900,
 	"contrast":             0x00980901,
+	"autoiso":              0x009a0918,
+	"autoexp":				0x009a0901,
+	"saturation":			0x00980902,
+	"sharpness":			0x0098091b,
+	"rotate":				0x00980922,
+	"stabilization":		0x009a0916,
 }
 
 func main() {
@@ -61,6 +67,13 @@ func main() {
 	y, err := strconv.Atoi(s[1])
 	if err != nil {
 		log.Fatalf("%s: illegal height: %v", s[1], err)
+	}
+	if *controls == "list" {
+		fmt.Printf("Control list (not all cameras may support all options):\n")
+		for c, _ := range cnames {
+			fmt.Printf("    %s\n", c)
+		}
+		return
 	}
 	if *startDelay != 0 {
 		time.Sleep(time.Duration(*startDelay) * time.Second)
