@@ -131,7 +131,8 @@ func publishImage(cm *frame.Snapper, w http.ResponseWriter, r *http.Request, enc
 	}
 	f, err := cm.Snap()
 	if err != nil {
-		log.Fatalf("Getframe: %v", err)
+		log.Printf("Getframe: %v", err)
+		return
 	}
 	defer f.Release()
 	if err := encode(w, f); err != nil {
