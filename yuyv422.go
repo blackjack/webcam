@@ -11,6 +11,7 @@ type fYUYV422 struct {
 	model   color.Model
 	b       image.Rectangle
 	stride  int
+	size	int
 	frame   []byte
 	release func()
 }
@@ -20,9 +21,9 @@ func init() {
 	RegisterFramer("YUYV", newFramerYUYV422)
 }
 
-func newFramerYUYV422(w, h, stride int) func([]byte, func()) (Frame, error) {
+func newFramerYUYV422(w, h, stride, size int) func([]byte, func()) (Frame, error) {
 	return func(b []byte, rel func()) (Frame, error) {
-		return frameYUYV422(h * stride, stride, w, h, b, rel)
+		return frameYUYV422(size, stride, w, h, b, rel)
 	}
 }
 
