@@ -1,3 +1,17 @@
+// Copyright 2019 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // package snapshot is a webcam stills capture module.
 package snapshot
 
@@ -19,12 +33,12 @@ type snap struct {
 }
 
 type Snapper struct {
-	cam      *webcam.Webcam
-	Timeout  uint32
-	Buffers  uint32
-	framer func([]byte, func()) (frame.Frame, error)
-	stop     chan struct{}
-	stream   chan snap
+	cam     *webcam.Webcam
+	Timeout uint32
+	Buffers uint32
+	framer  func([]byte, func()) (frame.Frame, error)
+	stop    chan struct{}
+	stream  chan snap
 }
 
 // NewSnapper creates a new Snapper.
@@ -156,7 +170,7 @@ func (c *Snapper) SetControl(id webcam.ControlID, value int32) error {
 // Return true if frame size can accomodate request.
 func Match(fs webcam.FrameSize, w, h int) bool {
 	return canFit(fs.MinWidth, fs.MaxWidth, fs.StepWidth, uint32(w)) &&
-		   canFit(fs.MinHeight, fs.MaxHeight, fs.StepHeight, uint32(h))
+		canFit(fs.MinHeight, fs.MaxHeight, fs.StepHeight, uint32(h))
 }
 
 func canFit(min, max, step, val uint32) bool {
@@ -164,5 +178,5 @@ func canFit(min, max, step, val uint32) bool {
 	if min == max && step == 0 && val == min {
 		return true
 	}
-	return step != 0 && val >= val && val <= max && ((val - min) % step) == 0
+	return step != 0 && val >= val && val <= max && ((val-min)%step) == 0
 }
