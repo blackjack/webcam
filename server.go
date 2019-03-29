@@ -86,6 +86,9 @@ func main() {
 			if err != nil {
 				log.Fatalf("Bad control value: %s (%v)", control, err)
 			}
+			if *verbose {
+				fmt.Printf("Setting control '%s' to %d\n", s[0], val)
+			}
 			if err = cm.SetControl(id, int32(val)); err != nil {
 				log.Fatalf("SetControl error: %s (%v)", control, err)
 			}
