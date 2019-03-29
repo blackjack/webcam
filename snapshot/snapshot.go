@@ -18,7 +18,7 @@ package snapshot
 import (
 	"fmt"
 
-	"github.com/aamcrae/imageserver/frame"
+	"github.com/aamcrae/webcam/frame"
 	"github.com/aamcrae/webcam"
 )
 
