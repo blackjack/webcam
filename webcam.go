@@ -109,18 +109,19 @@ func (w *Webcam) GetSupportedFrameSizes(f PixelFormat) []FrameSize {
 // Note, that device driver can change that values.
 // Resulting values are returned by a function
 // alongside with an error if any
-func (w *Webcam) SetImageFormat(f PixelFormat, width, height uint32) (PixelFormat, uint32, uint32, error) {
+func (w *Webcam) SetImageFormat(f PixelFormat, width, height uint32) (PixelFormat, uint32, uint32, uint32, error) {
 
 	code := uint32(f)
 	cw := width
 	ch := height
+	var stride uint32
 
-	err := setImageFormat(w.fd, &code, &width, &height)
+	err := setImageFormat(w.fd, &code, &width, &height, &stride)
 
 	if err != nil {
-		return 0, 0, 0, err
+		return 0, 0, 0, 0, err
 	} else {
-		return PixelFormat(code), cw, ch, nil
+		return PixelFormat(code), cw, ch, stride, nil
 	}
 }
 
