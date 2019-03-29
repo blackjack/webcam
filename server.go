@@ -132,11 +132,13 @@ func publishImage(cm *frame.Snapper, w http.ResponseWriter, r *http.Request, enc
 	f, err := cm.Snap()
 	if err != nil {
 		log.Printf("Getframe: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	defer f.Release()
 	if err := encode(w, f); err != nil {
 		log.Printf("Error writing image: %v\n", err)
+		w.WriteHeader(http.StatusInternalServerError)
 	} else if *verbose {
 		log.Printf("Wrote image successfully\n")
 	}
