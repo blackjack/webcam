@@ -131,6 +131,7 @@ func (c *Snapper) capture() {
 		select {
 		// Only executed if stream is ready to receive.
 		case c.stream <- snap{frame, index}:
+		// Signal to stop streaming.
 		case <-c.stop:
 			// Finish up.
 			c.cam.ReleaseFrame(index)
