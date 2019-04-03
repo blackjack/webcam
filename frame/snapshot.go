@@ -59,7 +59,7 @@ func (c *Snapper) Close() {
 }
 
 // Open initialises the webcam ready for use, and begins streaming.
-func (c *Snapper) Open(device string, format FourCC, w, h int) error {
+func (c *Snapper) Open(device string, format FourCC, w, h int) (ret error) {
 	pf, err := FourCCToPixelFormat(format)
 	if err != nil {
 		return err
@@ -71,6 +71,12 @@ func (c *Snapper) Open(device string, format FourCC, w, h int) error {
 	if err != nil {
 		return err
 	}
+	// Add a defer function that closes the camera in the event of an error.
+	defer func() {
+		if ret != nil {
+			c.Close()
+		}
+	}()
 	c.cam = cam
 	c.stop = make(chan struct{}, 1)
 	c.stream = make(chan snap, 0)
