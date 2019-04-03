@@ -25,7 +25,6 @@ type fRGB struct {
 	model   color.Model
 	b       image.Rectangle
 	stride  int
-	size    int
 	roffs   int
 	goffs   int
 	boffs   int
