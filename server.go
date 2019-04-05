@@ -27,8 +27,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aamcrae/webcam/frame"
 	"github.com/aamcrae/webcam"
+	"github.com/aamcrae/webcam/frame"
 )
 
 var port = flag.Int("port", 8080, "Web server port number")
@@ -47,11 +47,11 @@ var cnames map[string]webcam.ControlID = map[string]webcam.ControlID{
 	"brightness":           0x00980900,
 	"contrast":             0x00980901,
 	"autoiso":              0x009a0918,
-	"autoexp":				0x009a0901,
-	"saturation":			0x00980902,
-	"sharpness":			0x0098091b,
-	"rotate":				0x00980922,
-	"stabilization":		0x009a0916,
+	"autoexp":              0x009a0901,
+	"saturation":           0x00980902,
+	"sharpness":            0x0098091b,
+	"rotate":               0x00980922,
+	"stabilization":        0x009a0916,
 }
 
 func main() {
