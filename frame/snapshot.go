@@ -74,6 +74,7 @@ func (c *Snapper) Open(device string, format FourCC, w, h int) (ret error) {
 	// Add a defer function that closes the camera in the event of an error.
 	defer func() {
 		if ret != nil {
+			close(c.stream)
 			c.Close()
 		}
 	}()

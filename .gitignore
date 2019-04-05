@@ -1,0 +1,3 @@
+examples/getcontrols/getcontrols
+examples/http_mjpeg_streamer/http_mjpeg_streamer
+examples/stdout_streamer/stdout_streamer
