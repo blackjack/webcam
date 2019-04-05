@@ -182,5 +182,5 @@ func canFit(min, max, step, val uint32) bool {
 	if min == max && step == 0 && val == min {
 		return true
 	}
-	return step != 0 && val >= val && val <= max && ((val-min)%step) == 0
+	return step != 0 && val >= min && val <= max && ((val-min)%step) == 0
 }
