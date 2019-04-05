@@ -1,0 +1,16 @@
+[Unit]
+Description=webcam image server
+After=network.target
+
+[Service]
+User=root
+Type=simple
+TimeoutStopSec=10
+ExecStart=/usr/local/bin/imageserver
+
+Restart=on-failure
+RestartSec=15s
+SuccessExitStatus=SIGKILL
+
+[Install]
+WantedBy=default.target
