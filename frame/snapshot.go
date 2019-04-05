@@ -82,8 +82,7 @@ func (c *Snapper) Open(device string, format FourCC, w, h int) (ret error) {
 	c.stop = make(chan struct{}, 1)
 	c.stream = make(chan snap, 0)
 	// Get the supported formats and their descriptions.
-	mf := c.cam.GetSupportedFormats()
-	_, ok := mf[pf]
+	_, ok := c.cam.GetSupportedFormats()[pf]
 	if !ok {
 		return fmt.Errorf("%s: unsupported format: %s", device, format)
 	}
@@ -129,8 +128,8 @@ func (c *Snapper) Snap() (Frame, error) {
 	})
 }
 
-// capture continually reads frames and either discards them or
-// sends them to a channel that is ready to receive them.
+// capture continually reads frames and either discards the frames or
+// sends them to a channel that is ready.
 func (c *Snapper) capture() {
 	for {
 		err := c.cam.WaitForFrame(c.Timeout)
