@@ -1,5 +1,5 @@
 [Unit]
-Description=MeterMan image server
+Description=webcam image server
 After=network.target
 
 [Service]
