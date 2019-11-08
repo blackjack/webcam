@@ -22,6 +22,7 @@ import (
 
 const (
 	V4L2_PIX_FMT_PJPG = 0x47504A50
+	V4L2_PIX_FMT_MJPG = 0x47504a4d
 	V4L2_PIX_FMT_YUYV = 0x56595559
 )
 
@@ -45,6 +46,7 @@ func (slice FrameSizes) Swap(i, j int) {
 
 var supportedFormats = map[webcam.PixelFormat]bool{
 	V4L2_PIX_FMT_PJPG: true,
+	V4L2_PIX_FMT_MJPG: true,
 	V4L2_PIX_FMT_YUYV: true,
 }
 
@@ -219,6 +221,9 @@ func encodeToImage(wc *webcam.Webcam, back chan struct{}, fi chan []byte, li cha
 
 			}
 			img = yuyv
+		case V4L2_PIX_FMT_MJPG:
+			mjpg, _, _ := image.Decode(bytes.NewReader(frame))
+			img = mjpg
 		default:
 			log.Fatal("invalid format ?")
 		}
