@@ -153,6 +153,16 @@ func (w *Webcam) SetControl(id ControlID, value int32) error {
 	return setControl(w.fd, uint32(id), value)
 }
 
+// Get the FPS.
+func (w *Webcam) GetFps() (int32, error) {
+	return getFps(w.fd)
+}
+
+// Set FPS
+func (w *Webcam) SetFps(fps int32) error {
+	return setFps(w.fd, uint32(fps))
+}
+
 // Start streaming process
 func (w *Webcam) StartStreaming() error {
 	if w.streaming {
