@@ -25,6 +25,14 @@ type control struct {
 	max    int32
 }
 
+type capability struct {
+	driver   string
+	card     string
+	bus_info string
+	version  uint32
+	capabilities uint32
+}
+
 const (
 	V4L2_CAP_VIDEO_CAPTURE      uint32 = 0x00000001
 	V4L2_CAP_STREAMING          uint32 = 0x04000000
@@ -205,18 +213,31 @@ type v4l2_control struct {
 
 func checkCapabilities(fd uintptr) (supportsVideoCapture bool, supportsVideoStreaming bool, err error) {
 
-	caps := &v4l2_capability{}
+	caps, err := getCapabilities(fd)
 
-	err = ioctl.Ioctl(fd, VIDIOC_QUERYCAP, uintptr(unsafe.Pointer(caps)))
+	supportsVideoCapture = (caps.capabilities & V4L2_CAP_VIDEO_CAPTURE) != 0
+	supportsVideoStreaming = (caps.capabilities & V4L2_CAP_STREAMING) != 0
 
+	return
+}
+
+func getCapabilities(fd uintptr) (caps *capability, err error) {
+	v4lcaps := &v4l2_capability{}
+
+	err = ioctl.Ioctl(fd, VIDIOC_QUERYCAP, uintptr(unsafe.Pointer(v4lcaps)))
 	if err != nil {
 		return
 	}
 
-	supportsVideoCapture = (caps.capabilities & V4L2_CAP_VIDEO_CAPTURE) != 0
-	supportsVideoStreaming = (caps.capabilities & V4L2_CAP_STREAMING) != 0
-	return
+	caps = &capability{
+		driver:   CToGoString(v4lcaps.driver[:]),
+		card:     CToGoString(v4lcaps.card[:]),
+		bus_info: CToGoString(v4lcaps.bus_info[:]),
+		version:  v4lcaps.version,
+		capabilities: v4lcaps.capabilities,
+	}
 
+	return
 }
 
 func getPixelFormat(fd uintptr, index uint32) (code uint32, description string, err error) {

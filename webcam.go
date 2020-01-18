@@ -26,6 +26,16 @@ type Control struct {
 	Max  int32
 }
 
+// Capability is go representation of v4l2_capability struct.
+// See more: https://linuxtv.org/downloads/v4l-dvb-apis/uapi/v4l/vidioc-querycap.html#c.v4l2_capability
+type Capability struct {
+	Driver  string
+	Card    string
+	BusInfo string
+	Version uint32
+	Capabilities uint32
+}
+
 // Open a webcam with a given path
 // Checks if device is a v4l2 device and if it is
 // capable to stream video
@@ -56,6 +66,23 @@ func Open(path string) (*Webcam, error) {
 	w.fd = uintptr(fd)
 	w.bufcount = 256
 	return w, nil
+}
+
+// GetCapabilities reads device capabilities with VIDIOC_QUERYCAP.
+// See more: https://linuxtv.org/downloads/v4l-dvb-apis/uapi/v4l/vidioc-querycap.html#ioctl-vidioc-querycap
+func (w *Webcam) GetCapabilities() (*Capability, error) {
+	caps, err := getCapabilities(w.fd)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Capability{
+		Driver:  caps.driver,
+		Card:    caps.card,
+		BusInfo: caps.bus_info,
+		Version: caps.version,
+		Capabilities: caps.capabilities,
+	}, nil
 }
 
 // Returns image formats supported by the device alongside with
