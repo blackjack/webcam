@@ -431,16 +431,11 @@ func stopStreaming(fd uintptr) (err error) {
 
 }
 
-func FD_SET(p *unix.FdSet, i int) {
-	var l int = int(len(p.Bits))
-	p.Bits[i/l] |= 1 << uintptr(i%l)
-}
-
 func waitForFrame(fd uintptr, timeout uint32) (count int, err error) {
 
 	for {
 		fds := &unix.FdSet{}
-		FD_SET(fds, int(fd))
+		fds.Set(int(fd))
 
 		var oneSecInNsec int64 = 1e9
 		timeoutNsec := int64(timeout) * oneSecInNsec
