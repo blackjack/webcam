@@ -6,6 +6,8 @@ package webcam
 import (
 	"errors"
 	"golang.org/x/sys/unix"
+	"os"
+	"path/filepath"
 	"reflect"
 	"unsafe"
 )
@@ -24,6 +26,44 @@ type Control struct {
 	Name string
 	Min  int32
 	Max  int32
+}
+
+// FindAndOpen unlike Open() will itself search for a suitable webcam
+// device on the system. It will return error if unable to locate one
+func FindAndOpen() (*Webcam, error) {
+	// First option: look at the well known location
+	cam, err := Open("/dev/vide0")
+	if err == nil {
+		return cam, nil
+	}
+
+	// Second option: Walk over all the character devices in /dev and try
+	// locating a suitable webcam device
+	err = filepath.Walk("/dev", func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return errors.New("error while searching for webcam device: " + err.Error())
+		}
+		if info.Mode()&os.ModeCharDevice != 0 {
+			c, err := Open(path)
+			if err == nil {
+				cam = c
+				return filepath.SkipDir
+			}
+		}
+		return nil
+	})
+	// cam is not nil: this means we found a suitable webcam device while walking /dev
+	if cam != nil {
+		return cam, nil
+	}
+	// cam is nil but err is not nil: this means some error occured while walking over
+	// device files. Simply return the error
+	if err != nil {
+		return nil, err
+	}
+	// cam is nil and err is also nil: this means we successfully walked
+	// over available device files but cannot locate a suitable webcam device
+	return nil, errors.New("no working webcam device found")
 }
 
 // Open a webcam with a given path
