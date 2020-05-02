@@ -3,6 +3,7 @@ package webcam
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"unsafe"
 
 	"github.com/blackjack/webcam/ioctl"
@@ -75,6 +76,8 @@ var (
 	VIDIOC_QUERYBUF  = ioctl.IoRW(uintptr('V'), 9, unsafe.Sizeof(v4l2_buffer{}))
 	VIDIOC_QBUF      = ioctl.IoRW(uintptr('V'), 15, unsafe.Sizeof(v4l2_buffer{}))
 	VIDIOC_DQBUF     = ioctl.IoRW(uintptr('V'), 17, unsafe.Sizeof(v4l2_buffer{}))
+	VIDIOC_G_PARM    = ioctl.IoRW(uintptr('V'), 21, unsafe.Sizeof(v4l2_streamparm{}))
+	VIDIOC_S_PARM    = ioctl.IoRW(uintptr('V'), 22, unsafe.Sizeof(v4l2_streamparm{}))
 	VIDIOC_G_CTRL    = ioctl.IoRW(uintptr('V'), 27, unsafe.Sizeof(v4l2_control{}))
 	VIDIOC_S_CTRL    = ioctl.IoRW(uintptr('V'), 28, unsafe.Sizeof(v4l2_control{}))
 	VIDIOC_QUERYCTRL = ioctl.IoRW(uintptr('V'), 36, unsafe.Sizeof(v4l2_queryctrl{}))
@@ -201,6 +204,26 @@ type v4l2_queryctrl struct {
 type v4l2_control struct {
 	id    uint32
 	value int32
+}
+
+type v4l2_fract struct {
+	numerator   uint32
+	denominator uint32
+}
+
+type v4l2_streamparm_union struct {
+	capability     uint32
+	output_mode    uint32
+	time_per_frame v4l2_fract
+	extended_mode  uint32
+	buffers        uint32
+	reserved       [4]uint32
+	data           [200 - (10 * unsafe.Sizeof(uint32(0)))]byte
+}
+
+type v4l2_streamparm struct {
+	_type uint32
+	union v4l2_streamparm_union
 }
 
 func checkCapabilities(fd uintptr) (supportsVideoCapture bool, supportsVideoStreaming bool, err error) {
@@ -464,6 +487,30 @@ func setControl(fd uintptr, id uint32, val int32) error {
 	ctrl.id = id
 	ctrl.value = val
 	return ioctl.Ioctl(fd, VIDIOC_S_CTRL, uintptr(unsafe.Pointer(ctrl)))
+}
+
+func getFps(fd uintptr) (int32, error) {
+	param := &v4l2_streamparm{}
+	param._type = V4L2_BUF_TYPE_VIDEO_CAPTURE
+
+	err := ioctl.Ioctl(fd, VIDIOC_G_PARM, uintptr(unsafe.Pointer(param)))
+	if err != nil {
+		return 0, err
+	}
+	tf := param.union.time_per_frame
+	if tf.denominator == 0 || tf.numerator == 0 {
+		return 0, fmt.Errorf("Frames per second: invalid (%d/%d)", tf.denominator, tf.numerator)
+	}
+	return int32(tf.denominator / tf.numerator), nil
+}
+
+func setFps(fd uintptr, fps uint32) error {
+	param := &v4l2_streamparm{}
+	param._type = V4L2_BUF_TYPE_VIDEO_CAPTURE
+	param.union.time_per_frame.numerator = 1000
+	param.union.time_per_frame.denominator = fps * 1000
+
+	return ioctl.Ioctl(fd, VIDIOC_S_PARM, uintptr(unsafe.Pointer(param)))
 }
 
 func queryControls(fd uintptr) []control {
