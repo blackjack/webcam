@@ -38,7 +38,7 @@ var resolution = flag.String("resolution", "800x600", "Camera resolution")
 var format = flag.String("format", "YUYV", "Pixel format of camera")
 var controls = flag.String("controls", "",
 	"Control parameters for camera (use --controls=list to list controls)")
-var startDelay = flag.Int("delay", 0, "Delay at start (seconds)")
+var startDelay = flag.Int("delay", 2, "Delay at start (seconds)")
 var verbose = flag.Bool("v", false, "Log more information")
 
 var cnames map[string]webcam.ControlID = map[string]webcam.ControlID{
@@ -81,6 +81,9 @@ func main() {
 	cm := frame.NewSnapper()
 	if err := cm.Open(*device, frame.FourCC(*format), x, y); err != nil {
 		log.Fatalf("%s: %v", *device, err)
+	}
+	if *startDelay != 0 {
+		time.Sleep(time.Duration(*startDelay) * time.Second)
 	}
 	defer cm.Close()
 	// Set camera controls.
