@@ -29,6 +29,7 @@ import (
 
 	"github.com/aamcrae/webcam"
 	"github.com/aamcrae/webcam/frame"
+	"github.com/aamcrae/webcam/snapshot"
 )
 
 var port = flag.Int("port", 8080, "Web server port number")
@@ -78,7 +79,7 @@ func main() {
 	if *startDelay != 0 {
 		time.Sleep(time.Duration(*startDelay) * time.Second)
 	}
-	cm := frame.NewSnapper()
+	cm := snapshot.NewSnapper()
 	if err := cm.Open(*device, frame.FourCC(*format), x, y); err != nil {
 		log.Fatalf("%s: %v", *device, err)
 	}
@@ -141,7 +142,7 @@ func main() {
 	log.Fatal(server.ListenAndServe())
 }
 
-func publishImage(cm *frame.Snapper, w http.ResponseWriter, r *http.Request, encode func(http.ResponseWriter, frame.Frame) error) {
+func publishImage(cm *snapshot.Snapper, w http.ResponseWriter, r *http.Request, encode func(http.ResponseWriter, frame.Frame) error) {
 	if *verbose {
 		log.Printf("URL request: %v", r.URL)
 	}

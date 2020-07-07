@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package frame
+// snapshot extracts image frames from a video stream.
+package snapshot
 
 import (
 	"fmt"
 
 	"github.com/aamcrae/webcam"
+	"github.com/aamcrae/webcam/frame"
 )
 
 const (
@@ -26,7 +28,7 @@ const (
 )
 
 type snap struct {
-	frame []byte
+	frm   []byte
 	index uint32
 }
 
@@ -34,7 +36,7 @@ type Snapper struct {
 	cam     *webcam.Webcam
 	Timeout uint32
 	Buffers uint32
-	framer  func([]byte, func()) (Frame, error)
+	framer  func([]byte, func()) (frame.Frame, error)
 	stop    chan struct{}
 	stream  chan snap
 }
@@ -59,8 +61,8 @@ func (c *Snapper) Close() {
 }
 
 // Open initialises the webcam ready for use, and begins streaming.
-func (c *Snapper) Open(device string, format FourCC, w, h int) (ret error) {
-	pf, err := FourCCToPixelFormat(format)
+func (c *Snapper) Open(device string, format frame.FourCC, w, h int) (ret error) {
+	pf, err := frame.FourCCToPixelFormat(format)
 	if err != nil {
 		return err
 	}
@@ -104,7 +106,7 @@ func (c *Snapper) Open(device string, format FourCC, w, h int) (ret error) {
 	if npf != pf || w != int(nw) || h != int(nh) {
 		fmt.Printf("Asked for %08x %dx%d, got %08x %dx%d\n", pf, w, h, npf, nw, nh)
 	}
-	if c.framer, err = GetFramer(format, w, h, int(stride), int(size)); err != nil {
+	if c.framer, err = frame.GetFramer(format, w, h, int(stride), int(size)); err != nil {
 		return err
 	}
 
@@ -118,12 +120,12 @@ func (c *Snapper) Open(device string, format FourCC, w, h int) (ret error) {
 }
 
 // Snap returns one frame from the camera.
-func (c *Snapper) Snap() (Frame, error) {
+func (c *Snapper) Snap() (frame.Frame, error) {
 	snap, ok := <-c.stream
 	if !ok {
 		return nil, fmt.Errorf("No frame received")
 	}
-	return c.framer(snap.frame, func() {
+	return c.framer(snap.frm, func() {
 		c.cam.ReleaseFrame(snap.index)
 	})
 }
