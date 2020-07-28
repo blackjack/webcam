@@ -12,8 +12,8 @@ import (
 var device = flag.String("input", "/dev/video0", "Input video device")
 
 type control struct {
-	id webcam.ControlID
-	name string
+	id       webcam.ControlID
+	name     string
 	min, max int32
 }
 type byName []control

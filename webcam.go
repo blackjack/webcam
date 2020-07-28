@@ -6,8 +6,6 @@ package webcam
 import (
 	"errors"
 	"golang.org/x/sys/unix"
-	"reflect"
-	"unsafe"
 )
 
 // Webcam object
@@ -281,12 +279,4 @@ func (w *Webcam) SetAutoWhiteBalance(val bool) error {
 		v = 1
 	}
 	return setControl(w.fd, V4L2_CID_AUTO_WHITE_BALANCE, v)
-}
-
-func gobytes(p unsafe.Pointer, n int) []byte {
-
-	h := reflect.SliceHeader{uintptr(p), n, n}
-	s := *(*[]byte)(unsafe.Pointer(&h))
-
-	return s
 }
