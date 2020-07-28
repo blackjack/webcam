@@ -4,11 +4,23 @@ package main
 import (
 	"flag"
 	"fmt"
+	"sort"
 
 	"github.com/aamcrae/webcam"
 )
 
 var device = flag.String("input", "/dev/video0", "Input video device")
+
+type control struct {
+	id webcam.ControlID
+	name string
+	min, max int32
+}
+type ByName []control
+
+func (a ByName) Len() int           { return len(a) }
+func (a ByName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByName) Less(i, j int) bool { return a[i].name < a[j].name }
 
 func main() {
 	flag.Parse()
@@ -34,7 +46,18 @@ func main() {
 
 	cmap := cam.GetControls()
 	fmt.Println("Available controls: ")
-	for id, c := range cmap {
-		fmt.Printf("ID:%08x %-32s  Min: %4d  Max: %5d\n", id, c.Name, c.Min, c.Max)
+	var clist []control
+	for id, cm := range cmap {
+		var c control
+		c.id = id
+		c.name = cm.Name
+		c.min = cm.Min
+		c.max = cm.Max
+		clist = append(clist, c)
+	}
+	sort.Sort(ByName(clist))
+	for _, cl := range clist {
+		fmt.Printf("ID:%08x %-32s  Min: %4d  Max: %5d\n", cl.id,
+			cl.name, cl.min, cl.max)
 	}
 }
