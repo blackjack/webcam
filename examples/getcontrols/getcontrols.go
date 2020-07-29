@@ -16,11 +16,6 @@ type control struct {
 	name     string
 	min, max int32
 }
-type byName []control
-
-func (a byName) Len() int           { return len(a) }
-func (a byName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a byName) Less(i, j int) bool { return a[i].name < a[j].name }
 
 func main() {
 	flag.Parse()
@@ -55,7 +50,9 @@ func main() {
 		c.max = cm.Max
 		clist = append(clist, c)
 	}
-	sort.Sort(byName(clist))
+	sort.Slice(clist, func(i, j int) bool {
+		return clist[i].name < clist[j].name
+	})
 	for _, cl := range clist {
 		fmt.Printf("ID:%08x %-32s  Min: %4d  Max: %5d\n", cl.id,
 			cl.name, cl.min, cl.max)
