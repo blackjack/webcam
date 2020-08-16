@@ -21,6 +21,7 @@ import (
 )
 
 const (
+	V4L2_PIX_FMT_MJPG = 0x47504A4D
 	V4L2_PIX_FMT_PJPG = 0x47504A50
 	V4L2_PIX_FMT_YUYV = 0x56595559
 )
@@ -44,6 +45,7 @@ func (slice FrameSizes) Swap(i, j int) {
 }
 
 var supportedFormats = map[webcam.PixelFormat]bool{
+	V4L2_PIX_FMT_MJPG: true,
 	V4L2_PIX_FMT_PJPG: true,
 	V4L2_PIX_FMT_YUYV: true,
 }
@@ -200,33 +202,40 @@ func encodeToImage(wc *webcam.Webcam, back chan struct{}, fi chan []byte, li cha
 	)
 	for {
 		bframe := <-fi
-		// copy frame
-		if len(frame) < len(bframe) {
-			frame = make([]byte, len(bframe))
-		}
-		copy(frame, bframe)
-		back <- struct{}{}
 
-		switch format {
-		case V4L2_PIX_FMT_YUYV:
-			yuyv := image.NewYCbCr(image.Rect(0, 0, int(w), int(h)), image.YCbCrSubsampleRatio422)
-			for i := range yuyv.Cb {
-				ii := i * 4
-				yuyv.Y[i*2] = frame[ii]
-				yuyv.Y[i*2+1] = frame[ii+2]
-				yuyv.Cb[i] = frame[ii+1]
-				yuyv.Cr[i] = frame[ii+3]
+		var buf *bytes.Buffer
 
+		if format == V4L2_PIX_FMT_MJPG {
+			buf = bytes.NewBuffer(bframe)
+			back <- struct{}{}
+		} else {
+			// copy frame
+			if len(frame) < len(bframe) {
+				frame = make([]byte, len(bframe))
 			}
-			img = yuyv
-		default:
-			log.Fatal("invalid format ?")
-		}
-		//convert to jpeg
-		buf := &bytes.Buffer{}
-		if err := jpeg.Encode(buf, img, nil); err != nil {
-			log.Fatal(err)
-			return
+			copy(frame, bframe)
+			back <- struct{}{}
+
+			switch format {
+			case V4L2_PIX_FMT_YUYV:
+				yuyv := image.NewYCbCr(image.Rect(0, 0, int(w), int(h)), image.YCbCrSubsampleRatio422)
+				for i := range yuyv.Cb {
+					ii := i * 4
+					yuyv.Y[i*2] = frame[ii]
+					yuyv.Y[i*2+1] = frame[ii+2]
+					yuyv.Cb[i] = frame[ii+1]
+					yuyv.Cr[i] = frame[ii+3]
+				}
+				img = yuyv
+			default:
+				log.Fatal("invalid format ?")
+			}
+			//convert to jpeg
+			buf := &bytes.Buffer{}
+			if err := jpeg.Encode(buf, img, nil); err != nil {
+				log.Fatal(err)
+				return
+			}
 		}
 
 		const N = 50
@@ -243,7 +252,6 @@ func encodeToImage(wc *webcam.Webcam, back chan struct{}, fi chan []byte, li cha
 		if nn == 0 {
 			li <- buf
 		}
-
 	}
 }
 
