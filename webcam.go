@@ -174,7 +174,7 @@ func (w *Webcam) GetControls() map[ControlID]Control {
 // Get the value of a control.
 func (w *Webcam) GetControl(id ControlID) (int32, error) {
 	return getControl(w.fd, uint32(id))
-
+}
 
 // Set a control.
 func (w *Webcam) SetControl(id ControlID, value int32) error {
