@@ -5,8 +5,13 @@ package webcam
 
 import (
 	"errors"
+	"fmt"
 	"golang.org/x/sys/unix"
+	"os"
+	"path"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"unsafe"
 )
 
@@ -16,6 +21,7 @@ type Webcam struct {
 	bufcount  uint32
 	buffers   [][]byte
 	streaming bool
+	capabilities *v4l2_capability
 }
 
 type ControlID uint32
@@ -38,24 +44,46 @@ func Open(path string) (*Webcam, error) {
 		return nil, err
 	}
 
-	supportsVideoCapture, supportsVideoStreaming, err := checkCapabilities(fd)
-
+	caps, err := checkCapabilities(fd)
 	if err != nil {
 		return nil, err
 	}
 
-	if !supportsVideoCapture {
-		return nil, errors.New("Not a video capture device")
+	w := &Webcam{
+		fd: uintptr(fd),
+		bufcount: 256,
+		capabilities: caps,
 	}
 
-	if !supportsVideoStreaming {
+	// Makes sure it supports some form of video capture capability.
+	if !w.SupportsVideoCapture() {
+		return nil, errors.New("Not a video capture device")
+	}
+	if !w.SupportsVideoStreaming() {
 		return nil, errors.New("Device does not support the streaming I/O method")
 	}
 
-	w := new(Webcam)
-	w.fd = uintptr(fd)
-	w.bufcount = 256
 	return w, nil
+}
+
+func (w *Webcam) SupportsVideoCapture() bool {
+	return (w.capabilities.capabilities & V4L2_CAP_VIDEO_CAPTURE) != 0
+}
+
+func (w *Webcam) SupportsVideoStreaming() bool {
+	return (w.capabilities.capabilities & V4L2_CAP_STREAMING) != 0
+}
+
+func (w *Webcam) Card() string {
+	return CToGoString(w.capabilities.card[:])
+}
+
+func (w *Webcam) Driver() string {
+	return CToGoString(w.capabilities.driver[:])
+}
+
+func (w *Webcam) BusInfo() string {
+	return CToGoString(w.capabilities.bus_info[:])
 }
 
 // Returns image formats supported by the device alongside with
@@ -146,7 +174,7 @@ func (w *Webcam) GetControls() map[ControlID]Control {
 // Get the value of a control.
 func (w *Webcam) GetControl(id ControlID) (int32, error) {
 	return getControl(w.fd, uint32(id))
-}
+
 
 // Set a control.
 func (w *Webcam) SetControl(id ControlID, value int32) error {
@@ -281,6 +309,7 @@ func (w *Webcam) SetAutoWhiteBalance(val bool) error {
 	return setControl(w.fd, V4L2_CID_AUTO_WHITE_BALANCE, v)
 }
 
+
 func gobytes(p unsafe.Pointer, n int) []byte {
 
 	h := reflect.SliceHeader{uintptr(p), n, n}
@@ -288,3 +317,41 @@ func gobytes(p unsafe.Pointer, n int) []byte {
 
 	return s
 }
+
+// VIDEO4LINUX_DIR path to kernel known list of videos devices.
+var VIDEO4LINUX_DIR string = "/sys/class/video4linux/"
+
+// ListDevices enumerates video devices present in the system. It returns a map of
+// of path names to the "human readable" device name (the "card name").
+func ListDevices() (devices map[string]string, err error) {
+	devices = make(map[string]string)
+	err = filepath.Walk(VIDEO4LINUX_DIR, func(_ string, info os.FileInfo, err error) error {
+		if err != nil {
+			return fmt.Errorf("failure accessing %q: %v", VIDEO4LINUX_DIR, err)
+		}
+		if info.IsDir() { return nil }  // Root directory.
+		if !strings.HasPrefix(info.Name(), "video") && !strings.HasPrefix(info.Name(), "subdev") {
+			return nil
+		}
+		devPath := path.Join("/dev", info.Name())
+		w, err := Open(devPath)
+		if err != nil{
+			return fmt.Errorf("Failed to open device %q: %v", devPath, err)
+		}
+		defer w.Close()
+
+		// For some reason the kernel creates more than one path per actual physical device,
+		// one of which has no supported formats and can't be used for streaming.
+		formats := w.GetSupportedFormats()
+		if len(formats) == 0 {
+			return nil
+		}
+		devices[devPath] = w.Card()
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return
+}
+
