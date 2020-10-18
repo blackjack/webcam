@@ -15,11 +15,11 @@ func main() {
 		panic(err.Error())
 	}
 	if len(devices) == 0 {
-		fmt.Println("No valid video devices found in %q", webcam.VIDEO4LINUX_DIR)
+		fmt.Printf("No valid video devices found in %q\n", webcam.VIDEO4LINUX_DIR)
 	} else {
 		fmt.Println("Video devices found:")
 		for devPath, name := range devices {
-			fmt.Printf("  %q located in %s", name, devPath)
+			fmt.Printf("  %q located in %s\n", name, devPath)
 		}
 	}
 }
