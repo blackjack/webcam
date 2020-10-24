@@ -6,7 +6,7 @@ After=network.target
 User=root
 Type=simple
 TimeoutStopSec=10
-ExecStart=/usr/local/bin/imageserver
+ExecStart=/usr/local/bin/imageserver --delay=2 --controls=focus=175,power_line_frequency=1
 
 Restart=on-failure
 RestartSec=15s
