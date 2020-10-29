@@ -325,6 +325,10 @@ var VIDEO4LINUX_DIR string = "/sys/class/video4linux/"
 // of path names to the "human readable" device name (the "card name").
 func ListDevices() (devices map[string]string, err error) {
 	devices = make(map[string]string)
+	if _, err := os.Stat(VIDEO4LINUX_DIR); !os.IsNotExist(err) {
+		// If no cameras were ever plugged in, directory is not created.
+		return
+	}
 	err = filepath.Walk(VIDEO4LINUX_DIR, func(_ string, info os.FileInfo, err error) error {
 		if err != nil {
 			return fmt.Errorf("failure accessing %q: %v", VIDEO4LINUX_DIR, err)
