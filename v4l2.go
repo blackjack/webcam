@@ -203,18 +203,15 @@ type v4l2_control struct {
 	value int32
 }
 
-func checkCapabilities(fd uintptr) (supportsVideoCapture bool, supportsVideoStreaming bool, err error) {
+func checkCapabilities(fd uintptr) (caps *v4l2_capability, err error) {
 
-	caps := &v4l2_capability{}
-
+	caps = &v4l2_capability{}
 	err = ioctl.Ioctl(fd, VIDIOC_QUERYCAP, uintptr(unsafe.Pointer(caps)))
 
 	if err != nil {
-		return
+		return nil, err
 	}
 
-	supportsVideoCapture = (caps.capabilities & V4L2_CAP_VIDEO_CAPTURE) != 0
-	supportsVideoStreaming = (caps.capabilities & V4L2_CAP_STREAMING) != 0
 	return
 
 }
