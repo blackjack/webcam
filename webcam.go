@@ -325,7 +325,7 @@ var VIDEO4LINUX_DIR string = "/sys/class/video4linux/"
 // of path names to the "human readable" device name (the "card name").
 func ListDevices() (devices map[string]string, err error) {
 	devices = make(map[string]string)
-	if _, err := os.Stat(VIDEO4LINUX_DIR); !os.IsNotExist(err) {
+	if _, err = os.Stat(VIDEO4LINUX_DIR); !os.IsNotExist(err) {
 		// If no cameras were ever plugged in, directory is not created.
 		return
 	}
