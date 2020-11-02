@@ -319,14 +319,17 @@ func gobytes(p unsafe.Pointer, n int) []byte {
 }
 
 // VIDEO4LINUX_DIR path to kernel known list of videos devices.
-var VIDEO4LINUX_DIR string = "/sys/class/video4linux/"
+var VIDEO4LINUX_DIR string = "/sys/class/video4linux"
 
 // ListDevices enumerates video devices present in the system. It returns a map of
 // of path names to the "human readable" device name (the "card name").
 func ListDevices() (devices map[string]string, err error) {
 	devices = make(map[string]string)
-	if _, err = os.Stat(VIDEO4LINUX_DIR); !os.IsNotExist(err) {
-		// If no cameras were ever plugged in, directory is not created.
+	if _, err = os.Stat(VIDEO4LINUX_DIR); err != nil {
+		if os.IsNotExist(err) {
+			// No devices present, make error nil and return an empty list.
+			err = nil
+		}
 		return
 	}
 	err = filepath.Walk(VIDEO4LINUX_DIR, func(_ string, info os.FileInfo, err error) error {
