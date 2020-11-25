@@ -118,7 +118,7 @@ FMT:
 	}
 
 	fmt.Fprintln(os.Stderr, "Requesting", format_desc[format], size.GetString())
-	f, w, h, err := cam.SetImageFormat(format, uint32(size.MaxWidth), uint32(size.MaxHeight))
+	f, w, h, _, _, err := cam.SetImageFormat(format, uint32(size.MaxWidth), uint32(size.MaxHeight))
 	if err != nil {
 		log.Println("SetImageFormat return error", err)
 		return
