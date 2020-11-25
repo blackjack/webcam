@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"image"
 
-	"github.com/aamcrae/webcam"
+	"github.com/blackjack/webcam"
 )
 
 type FourCC string

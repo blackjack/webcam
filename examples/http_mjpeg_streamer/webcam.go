@@ -17,7 +17,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/aamcrae/webcam"
+	"github.com/blackjack/webcam"
 )
 
 const (

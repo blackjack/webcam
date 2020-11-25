@@ -18,8 +18,8 @@ package snapshot
 import (
 	"fmt"
 
-	"github.com/aamcrae/webcam"
-	"github.com/aamcrae/webcam/frame"
+	"github.com/blackjack/webcam"
+	"github.com/blackjack/webcam/frame"
 )
 
 const (

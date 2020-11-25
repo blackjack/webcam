@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/aamcrae/webcam"
+	"github.com/blackjack/webcam"
 )
 
 var device = flag.String("input", "/dev/video0", "Input video device")
