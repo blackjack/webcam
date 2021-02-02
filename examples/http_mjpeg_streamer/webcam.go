@@ -145,7 +145,7 @@ FMT:
 		go httpVideo(*addr, li)
 	}
 
-	timeout := uint32(5) //5 seconds
+	timeout := time.Second * 5
 	start := time.Now()
 	var fr time.Duration
 

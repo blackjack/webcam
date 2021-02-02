@@ -3,6 +3,7 @@ package webcam
 import (
 	"bytes"
 	"encoding/binary"
+	"time"
 	"unsafe"
 
 	"github.com/blackjack/webcam/ioctl"
@@ -431,15 +432,13 @@ func stopStreaming(fd uintptr) (err error) {
 
 }
 
-func waitForFrame(fd uintptr, timeout uint32) (count int, err error) {
+func waitForFrame(fd uintptr, timeout time.Duration) (count int, err error) {
 
 	for {
 		fds := &unix.FdSet{}
 		fds.Set(int(fd))
 
-		var oneSecInNsec int64 = 1e9
-		timeoutNsec := int64(timeout) * oneSecInNsec
-		nativeTimeVal := unix.NsecToTimeval(timeoutNsec)
+		nativeTimeVal := unix.NsecToTimeval(int64(timeout))
 		tv := &nativeTimeVal
 
 		count, err = unix.Select(int(fd+1), fds, nil, nil, tv)

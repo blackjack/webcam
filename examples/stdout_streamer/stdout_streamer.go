@@ -6,10 +6,14 @@
 // Example usage: go run stdout_streamer.go | vlc -
 package main
 
-import "github.com/blackjack/webcam"
-import "os"
-import "fmt"
-import "sort"
+import (
+	"fmt"
+	"os"
+	"sort"
+	"time"
+
+	"github.com/blackjack/webcam"
+)
 
 func readChoice(s string) int {
 	var i int
@@ -89,7 +93,7 @@ func main() {
 		panic(err.Error())
 	}
 
-	timeout := uint32(5) //5 seconds
+	timeout := time.Second * 5
 	for {
 		err = cam.WaitForFrame(timeout)
 
