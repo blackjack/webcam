@@ -234,7 +234,7 @@ func (w *Webcam) ReleaseFrame(index uint32) error {
 	return mmapEnqueueBuffer(w.fd, index)
 }
 
-// Wait until frame could be read
+// WaitForFrame waits until frame could be read
 func (w *Webcam) WaitForFrame(timeout time.Duration) error {
 
 	count, err := waitForFrame(w.fd, timeout)
