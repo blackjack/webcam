@@ -5,9 +5,11 @@ package webcam
 
 import (
 	"errors"
-	"golang.org/x/sys/unix"
 	"reflect"
+	"time"
 	"unsafe"
+
+	"golang.org/x/sys/unix"
 )
 
 // Webcam object
@@ -233,7 +235,7 @@ func (w *Webcam) ReleaseFrame(index uint32) error {
 }
 
 // Wait until frame could be read
-func (w *Webcam) WaitForFrame(timeout uint32) error {
+func (w *Webcam) WaitForFrame(timeout time.Duration) error {
 
 	count, err := waitForFrame(w.fd, timeout)
 
