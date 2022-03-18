@@ -5,9 +5,10 @@ package webcam
 
 import (
 	"errors"
-	"golang.org/x/sys/unix"
 	"reflect"
 	"unsafe"
+
+	"golang.org/x/sys/unix"
 )
 
 // Webcam object
@@ -151,6 +152,16 @@ func (w *Webcam) GetControl(id ControlID) (int32, error) {
 // Set a control.
 func (w *Webcam) SetControl(id ControlID, value int32) error {
 	return setControl(w.fd, uint32(id), value)
+}
+
+// Get the framerate.
+func (w *Webcam) GetFramerate() (float32, error) {
+	return getFramerate(w.fd)
+}
+
+// Set FPS
+func (w *Webcam) SetFramerate(fps float32) error {
+	return setFramerate(w.fd, 1000, uint32(1000*(fps)))
 }
 
 // Start streaming process
