@@ -1,4 +1,4 @@
-module github.com/blackjack/webcam
+module github.com/adamlouis/webcam
 
 go 1.17
 
