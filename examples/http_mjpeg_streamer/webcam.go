@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"image"
+	"image/color"
 	"image/jpeg"
 	"log"
 	"mime/multipart"
@@ -23,6 +24,7 @@ import (
 const (
 	V4L2_PIX_FMT_PJPG = 0x47504A50
 	V4L2_PIX_FMT_YUYV = 0x56595559
+	V4L2_PIX_FMT_GREY = 0x59455247
 )
 
 type FrameSizes []webcam.FrameSize
@@ -46,6 +48,7 @@ func (slice FrameSizes) Swap(i, j int) {
 var supportedFormats = map[webcam.PixelFormat]bool{
 	V4L2_PIX_FMT_PJPG: true,
 	V4L2_PIX_FMT_YUYV: true,
+	V4L2_PIX_FMT_GREY: true,
 }
 
 func main() {
@@ -219,6 +222,14 @@ func encodeToImage(wc *webcam.Webcam, back chan struct{}, fi chan []byte, li cha
 
 			}
 			img = yuyv
+		case V4L2_PIX_FMT_GREY:
+			gry := image.NewGray(image.Rect(0, 0, int(w), int(h)))
+			for i := 0; i < int(w); i++ {
+				for j := 0; j < int(h); j++ {
+					gry.Set(int(i), int(j), color.Gray{Y: frame[j*int(w)+i]})
+				}
+			}
+			img = gry
 		default:
 			log.Fatal("invalid format ?")
 		}
