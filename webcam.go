@@ -61,7 +61,7 @@ func Open(path string) (*Webcam, error) {
 
 // Returns image formats supported by the device alongside with
 // their text description
-// Not that this function is somewhat experimental. Frames are not ordered in
+// Note that this function is somewhat experimental. Frames are not ordered in
 // any meaning, also duplicates can occur so it's up to developer to clean it up.
 // See http://linuxtv.org/downloads/v4l-dvb-apis/vidioc-enum-framesizes.html
 // for more information
