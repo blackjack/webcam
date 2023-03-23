@@ -54,7 +54,7 @@ func Open(path string) (*Webcam, error) {
 	}
 
 	w := new(Webcam)
-	w.fd = uintptr(fd)
+	w.fd = fd
 	w.bufcount = 256
 	return w, nil
 }
@@ -84,6 +84,16 @@ func (w *Webcam) GetSupportedFormats() map[PixelFormat]string {
 	}
 
 	return result
+}
+
+// Select the current video input
+func (w *Webcam) SelectInput(index uint32) error {
+	return selectInput(w.fd, index)
+}
+
+// Query the current video input
+func (w *Webcam) GetInput() (int32, error) {
+	return getInput(w.fd)
 }
 
 // Returns supported frame sizes for a given image format
