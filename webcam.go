@@ -126,6 +126,7 @@ func (w *Webcam) GetSupportedFrameSizes(f PixelFormat) []FrameSize {
 	return result
 }
 
+// Returns supported frame rates for a given image format and frame size
 func (w *Webcam) GetSupportedFramerates(fp PixelFormat, fs FrameSize) []FrameRate {
 	result := make([]FrameRate, 0)
 
