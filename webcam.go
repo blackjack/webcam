@@ -126,6 +126,25 @@ func (w *Webcam) GetSupportedFrameSizes(f PixelFormat) []FrameSize {
 	return result
 }
 
+func (w *Webcam) GetSupportedFramerates(fp PixelFormat, fs FrameSize) []FrameRate {
+	result := make([]FrameRate, 0)
+
+	var index uint32
+	var err error
+
+	for index = 0; err == nil; index++ {
+		r, err := getFrameInterval(w.fd, index, uint32(fp), fs)
+
+		if err != nil {
+			break
+		}
+
+		result = append(result, r)
+	}
+
+	return result
+}
+
 // Sets desired image format and frame size
 // Note, that device driver can change that values.
 // Resulting values are returned by a function

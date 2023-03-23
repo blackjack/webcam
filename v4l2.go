@@ -41,6 +41,12 @@ const (
 )
 
 const (
+	V4L2_FRMIVAL_TYPE_DISCRETE   uint32 = 1
+	V4L2_FRMIVAL_TYPE_CONTINUOUS uint32 = 2
+	V4L2_FRMIVAL_TYPE_STEPWISE   uint32 = 3
+)
+
+const (
 	V4L2_CID_BASE               uint32 = 0x00980900
 	V4L2_CID_AUTO_WHITE_BALANCE uint32 = V4L2_CID_BASE + 12
 	V4L2_CID_PRIVATE_BASE       uint32 = 0x08000000
@@ -82,6 +88,7 @@ var (
 	VIDIOC_S_CTRL    = ioctl.IoRW(uintptr('V'), 28, unsafe.Sizeof(v4l2_control{}))
 	VIDIOC_QUERYCTRL = ioctl.IoRW(uintptr('V'), 36, unsafe.Sizeof(v4l2_queryctrl{}))
 	//sizeof int32
+<<<<<<< HEAD
 	VIDIOC_STREAMON        = ioctl.IoW(uintptr('V'), 18, 4)
 	VIDIOC_STREAMOFF       = ioctl.IoW(uintptr('V'), 19, 4)
 	VIDIOC_G_INPUT         = ioctl.IoR(uintptr('V'), 38, 4)
@@ -89,6 +96,14 @@ var (
 	VIDIOC_ENUM_FRAMESIZES = ioctl.IoRW(uintptr('V'), 74, unsafe.Sizeof(v4l2_frmsizeenum{}))
 	__p                    = unsafe.Pointer(uintptr(0))
 	NativeByteOrder        = getNativeByteOrder()
+=======
+	VIDIOC_STREAMON            = ioctl.IoW(uintptr('V'), 18, 4)
+	VIDIOC_STREAMOFF           = ioctl.IoW(uintptr('V'), 19, 4)
+	VIDIOC_ENUM_FRAMESIZES     = ioctl.IoRW(uintptr('V'), 74, unsafe.Sizeof(v4l2_frmsizeenum{}))
+	VIDIOC_ENUM_FRAMEINTERVALS = ioctl.IoRW(uintptr('V'), 75, unsafe.Sizeof(v4l2_frmivalenum{}))
+	__p                        = unsafe.Pointer(uintptr(0))
+	NativeByteOrder            = getNativeByteOrder()
+>>>>>>> 733159c (Add getSupportedFramerates)
 )
 
 type v4l2_capability struct {
@@ -130,6 +145,22 @@ type v4l2_frmsize_stepwise struct {
 	Min_height  uint32
 	Max_height  uint32
 	Step_height uint32
+}
+
+type v4l2_frmivalenum struct {
+	index        uint32
+	pixel_format uint32
+	width        uint32
+	height       uint32
+	_type        uint32
+	union        [24]uint8
+	reserved     [2]uint32
+}
+
+type v4l2_frmival_stepwise struct {
+	min  v4l2_fract
+	max  v4l2_fract
+	step v4l2_fract
 }
 
 // Hack to make go compiler properly align union
@@ -209,8 +240,8 @@ type v4l2_control struct {
 }
 
 type v4l2_fract struct {
-	numerator   uint32
-	denominator uint32
+	Numerator   uint32
+	Denominator uint32
 }
 
 type v4l2_streamparm_union struct {
@@ -528,17 +559,65 @@ func getFramerate(fd uintptr) (float32, error) {
 		return 0, err
 	}
 	tf := param.union.time_per_frame
-	if tf.denominator == 0 || tf.numerator == 0 {
-		return 0, fmt.Errorf("Invalid framerate (%d/%d)", tf.denominator, tf.numerator)
+	if tf.Denominator == 0 || tf.Numerator == 0 {
+		return 0, fmt.Errorf("Invalid framerate (%d/%d)", tf.Denominator, tf.Numerator)
 	}
-	return float32(tf.denominator) / float32(tf.numerator), nil
+	return float32(tf.Denominator) / float32(tf.Numerator), nil
+}
+
+func getFrameInterval(fd uintptr, index uint32, code uint32, framesize FrameSize) (FrameRate, error) {
+	frmivalenum := &v4l2_frmivalenum{}
+	frmivalenum.index = index
+	frmivalenum.pixel_format = code
+	frmivalenum.width = framesize.MinWidth
+	frmivalenum.height = framesize.MinHeight
+
+	framerate := FrameRate{}
+	err := ioctl.Ioctl(fd, VIDIOC_ENUM_FRAMEINTERVALS, uintptr(unsafe.Pointer(frmivalenum)))
+	if err != nil {
+		return framerate, err
+	}
+
+	switch frmivalenum._type {
+
+	case V4L2_FRMIVAL_TYPE_DISCRETE:
+		discrete := &v4l2_fract{}
+		err = binary.Read(bytes.NewBuffer(frmivalenum.union[:]), NativeByteOrder, discrete)
+		if err != nil {
+			break
+		}
+
+		framerate.MinDenominator = discrete.Denominator
+		framerate.MaxDenominator = discrete.Denominator
+		framerate.StepDenominator = 0
+		framerate.MinNumerator = discrete.Numerator
+		framerate.MaxNumerator = discrete.Numerator
+		framerate.StepNumerator = 0
+
+	case V4L2_FRMIVAL_TYPE_CONTINUOUS:
+
+	case V4L2_FRMIVAL_TYPE_STEPWISE:
+		stepwise := &v4l2_frmival_stepwise{}
+		err = binary.Read(bytes.NewBuffer(frmivalenum.union[:]), NativeByteOrder, stepwise)
+		if err != nil {
+			break
+		}
+
+		framerate.MinDenominator = stepwise.min.Denominator
+		framerate.MaxDenominator = stepwise.max.Denominator
+		framerate.StepDenominator = stepwise.step.Denominator
+		framerate.MinNumerator = stepwise.min.Numerator
+		framerate.MaxNumerator = stepwise.max.Numerator
+		framerate.StepNumerator = stepwise.step.Numerator
+	}
+	return framerate, err
 }
 
 func setFramerate(fd uintptr, num, denom uint32) error {
 	param := &v4l2_streamparm{}
 	param._type = V4L2_BUF_TYPE_VIDEO_CAPTURE
-	param.union.time_per_frame.numerator = num
-	param.union.time_per_frame.denominator = denom
+	param.union.time_per_frame.Numerator = num
+	param.union.time_per_frame.Denominator = denom
 	return ioctl.Ioctl(fd, VIDIOC_S_PARM, uintptr(unsafe.Pointer(param)))
 }
 

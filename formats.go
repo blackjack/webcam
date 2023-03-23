@@ -22,6 +22,28 @@ type FrameSize struct {
 	StepHeight uint32
 }
 
+// Represents framerate supported by a webcam
+type FrameRate struct {
+	MinNumerator  uint32
+	MaxNumerator  uint32
+	StepNumerator uint32
+
+	MinDenominator  uint32
+	MaxDenominator  uint32
+	StepDenominator uint32
+}
+
+// Return string representation of framerate e.g.
+// 1/30 for discrete framerates and
+// [1-2;1]/[10-60;1] for stepwise framerates
+func (f FrameRate) String() string {
+	if f.StepNumerator == 0 && f.StepDenominator == 0 {
+		return fmt.Sprintf("%d/%d", f.MinNumerator, f.MinDenominator)
+	} else {
+		return fmt.Sprintf("[%d-%d;%d]/[%d-%d;%d]", f.MinNumerator, f.MaxNumerator, f.StepNumerator, f.MinDenominator, f.MaxDenominator, f.StepDenominator)
+	}
+}
+
 // Returns string representation of frame size, e.g.
 // 1280x720 for fixed-size frames and
 // [320-640;160]x[240-480;160] for stepwise-sized frames
