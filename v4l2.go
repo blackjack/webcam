@@ -565,54 +565,6 @@ func getFramerate(fd uintptr) (float32, error) {
 	return float32(tf.Denominator) / float32(tf.Numerator), nil
 }
 
-func getFrameInterval(fd uintptr, index uint32, code uint32, framesize FrameSize) (FrameRate, error) {
-	frmivalenum := &v4l2_frmivalenum{}
-	frmivalenum.index = index
-	frmivalenum.pixel_format = code
-	frmivalenum.width = framesize.MinWidth
-	frmivalenum.height = framesize.MinHeight
-
-	framerate := FrameRate{}
-	err := ioctl.Ioctl(fd, VIDIOC_ENUM_FRAMEINTERVALS, uintptr(unsafe.Pointer(frmivalenum)))
-	if err != nil {
-		return framerate, err
-	}
-
-	switch frmivalenum._type {
-
-	case V4L2_FRMIVAL_TYPE_DISCRETE:
-		discrete := &v4l2_fract{}
-		err = binary.Read(bytes.NewBuffer(frmivalenum.union[:]), NativeByteOrder, discrete)
-		if err != nil {
-			break
-		}
-
-		framerate.MinDenominator = discrete.Denominator
-		framerate.MaxDenominator = discrete.Denominator
-		framerate.StepDenominator = 0
-		framerate.MinNumerator = discrete.Numerator
-		framerate.MaxNumerator = discrete.Numerator
-		framerate.StepNumerator = 0
-
-	case V4L2_FRMIVAL_TYPE_CONTINUOUS:
-
-	case V4L2_FRMIVAL_TYPE_STEPWISE:
-		stepwise := &v4l2_frmival_stepwise{}
-		err = binary.Read(bytes.NewBuffer(frmivalenum.union[:]), NativeByteOrder, stepwise)
-		if err != nil {
-			break
-		}
-
-		framerate.MinDenominator = stepwise.min.Denominator
-		framerate.MaxDenominator = stepwise.max.Denominator
-		framerate.StepDenominator = stepwise.step.Denominator
-		framerate.MinNumerator = stepwise.min.Numerator
-		framerate.MaxNumerator = stepwise.max.Numerator
-		framerate.StepNumerator = stepwise.step.Numerator
-	}
-	return framerate, err
-}
-
 func setFramerate(fd uintptr, num, denom uint32) error {
 	param := &v4l2_streamparm{}
 	param._type = V4L2_BUF_TYPE_VIDEO_CAPTURE
