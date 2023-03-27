@@ -127,14 +127,14 @@ func (w *Webcam) GetSupportedFrameSizes(f PixelFormat) []FrameSize {
 }
 
 // Returns supported frame rates for a given image format and frame size
-func (w *Webcam) GetSupportedFramerates(fp PixelFormat, fs FrameSize) []FrameRate {
+func (w *Webcam) GetSupportedFramerates(fp PixelFormat, width uint32, height uint32) []FrameRate {
 	result := make([]FrameRate, 0)
 
 	var index uint32
 	var err error
 
 	for index = 0; err == nil; index++ {
-		r, err := getFrameInterval(w.fd, index, uint32(fp), fs)
+		r, err := getFrameInterval(w.fd, index, uint32(fp), width, height)
 
 		if err != nil {
 			break

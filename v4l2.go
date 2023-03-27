@@ -88,22 +88,14 @@ var (
 	VIDIOC_S_CTRL    = ioctl.IoRW(uintptr('V'), 28, unsafe.Sizeof(v4l2_control{}))
 	VIDIOC_QUERYCTRL = ioctl.IoRW(uintptr('V'), 36, unsafe.Sizeof(v4l2_queryctrl{}))
 	//sizeof int32
-<<<<<<< HEAD
-	VIDIOC_STREAMON        = ioctl.IoW(uintptr('V'), 18, 4)
-	VIDIOC_STREAMOFF       = ioctl.IoW(uintptr('V'), 19, 4)
-	VIDIOC_G_INPUT         = ioctl.IoR(uintptr('V'), 38, 4)
-	VIDIOC_S_INPUT         = ioctl.IoRW(uintptr('V'), 39, 4)
-	VIDIOC_ENUM_FRAMESIZES = ioctl.IoRW(uintptr('V'), 74, unsafe.Sizeof(v4l2_frmsizeenum{}))
-	__p                    = unsafe.Pointer(uintptr(0))
-	NativeByteOrder        = getNativeByteOrder()
-=======
 	VIDIOC_STREAMON            = ioctl.IoW(uintptr('V'), 18, 4)
 	VIDIOC_STREAMOFF           = ioctl.IoW(uintptr('V'), 19, 4)
+	VIDIOC_G_INPUT             = ioctl.IoR(uintptr('V'), 38, 4)
+	VIDIOC_S_INPUT             = ioctl.IoRW(uintptr('V'), 39, 4)
 	VIDIOC_ENUM_FRAMESIZES     = ioctl.IoRW(uintptr('V'), 74, unsafe.Sizeof(v4l2_frmsizeenum{}))
 	VIDIOC_ENUM_FRAMEINTERVALS = ioctl.IoRW(uintptr('V'), 75, unsafe.Sizeof(v4l2_frmivalenum{}))
 	__p                        = unsafe.Pointer(uintptr(0))
 	NativeByteOrder            = getNativeByteOrder()
->>>>>>> 733159c (Add getSupportedFramerates)
 )
 
 type v4l2_capability struct {
@@ -351,6 +343,55 @@ func getName(fd uintptr) (string, error) {
 	}
 
 	return CToGoString(caps.card[:]), nil
+}
+
+func getFrameInterval(fd uintptr, index uint32, code uint32, width uint32, height uint32) (FrameRate, error) {
+	frmivalEnum := &v4l2_frmivalenum{
+		index:        index,
+		pixel_format: code,
+		width:        width,
+		height:       height,
+	}
+
+	if err := ioctl.Ioctl(fd, VIDIOC_ENUM_FRAMEINTERVALS, uintptr(unsafe.Pointer(frmivalEnum))); err != nil {
+		return FrameRate{}, err
+	}
+
+	switch frmivalEnum._type {
+
+	case V4L2_FRMIVAL_TYPE_DISCRETE:
+		discrete := &v4l2_fract{}
+		if err := binary.Read(bytes.NewBuffer(frmivalEnum.union[:]), NativeByteOrder, discrete); err != nil {
+			return FrameRate{}, err
+		}
+		return FrameRate{
+			MinDenominator:  discrete.Denominator,
+			MaxDenominator:  discrete.Denominator,
+			StepDenominator: 0,
+			MinNumerator:    discrete.Numerator,
+			MaxNumerator:    discrete.Numerator,
+			StepNumerator:   0,
+		}, nil
+
+	case V4L2_FRMIVAL_TYPE_CONTINUOUS:
+		return FrameRate{}, fmt.Errorf("V4L2_FRMIVAL_TYPE_CONTINUOUS not implemented")
+
+	case V4L2_FRMIVAL_TYPE_STEPWISE:
+		stepwise := &v4l2_frmival_stepwise{}
+		if err := binary.Read(bytes.NewBuffer(frmivalEnum.union[:]), NativeByteOrder, stepwise); err != nil {
+			return FrameRate{}, err
+		}
+		return FrameRate{
+			MinDenominator:  stepwise.min.Denominator,
+			MaxDenominator:  stepwise.max.Denominator,
+			StepDenominator: stepwise.step.Denominator,
+			MinNumerator:    stepwise.min.Numerator,
+			MaxNumerator:    stepwise.max.Numerator,
+			StepNumerator:   stepwise.step.Numerator,
+		}, nil
+	}
+
+	return FrameRate{}, fmt.Errorf("unknown frame interval type")
 }
 
 func getBusInfo(fd uintptr) (string, error) {
