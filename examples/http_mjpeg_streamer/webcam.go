@@ -109,6 +109,7 @@ FMT:
 		for _, f := range frames {
 			if *szstr == f.GetString() {
 				size = &f
+				break
 			}
 		}
 	}
