@@ -130,7 +130,7 @@ type v4l2_frmsize_stepwise struct {
 	Step_height uint32
 }
 
-//Hack to make go compiler properly align union
+// Hack to make go compiler properly align union
 type v4l2_format_aligned_union struct {
 	data [200 - unsafe.Sizeof(__p)]byte
 	_    unsafe.Pointer
@@ -309,6 +309,24 @@ func getFrameSize(fd uintptr, index uint32, code uint32) (frameSize FrameSize, e
 	}
 
 	return
+}
+
+func getName(fd uintptr) (string, error) {
+	caps := &v4l2_capability{}
+	if err := ioctl.Ioctl(fd, VIDIOC_QUERYCAP, uintptr(unsafe.Pointer(caps))); err != nil {
+		return "", err
+	}
+
+	return CToGoString(caps.card[:]), nil
+}
+
+func getBusInfo(fd uintptr) (string, error) {
+	caps := &v4l2_capability{}
+	if err := ioctl.Ioctl(fd, VIDIOC_QUERYCAP, uintptr(unsafe.Pointer(caps))); err != nil {
+		return "", err
+	}
+
+	return CToGoString(caps.bus_info[:]), nil
 }
 
 func setImageFormat(fd uintptr, formatcode *uint32, width *uint32, height *uint32) (err error) {

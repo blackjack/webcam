@@ -54,7 +54,7 @@ func Open(path string) (*Webcam, error) {
 	}
 
 	w := new(Webcam)
-	w.fd = uintptr(fd)
+	w.fd = fd
 	w.bufcount = 256
 	return w, nil
 }
@@ -84,6 +84,16 @@ func (w *Webcam) GetSupportedFormats() map[PixelFormat]string {
 	}
 
 	return result
+}
+
+// GetName returns the human-readable name of the device
+func (w *Webcam) GetName() (string, error) {
+	return getName(w.fd)
+}
+
+// GetBusInfo returns the location of the device in the system
+func (w *Webcam) GetBusInfo() (string, error) {
+	return getBusInfo(w.fd)
 }
 
 // Returns supported frame sizes for a given image format
