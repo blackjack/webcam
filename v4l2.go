@@ -84,6 +84,8 @@ var (
 	//sizeof int32
 	VIDIOC_STREAMON        = ioctl.IoW(uintptr('V'), 18, 4)
 	VIDIOC_STREAMOFF       = ioctl.IoW(uintptr('V'), 19, 4)
+	VIDIOC_G_INPUT         = ioctl.IoR(uintptr('V'), 38, 4)
+	VIDIOC_S_INPUT         = ioctl.IoRW(uintptr('V'), 39, 4)
 	VIDIOC_ENUM_FRAMESIZES = ioctl.IoRW(uintptr('V'), 74, unsafe.Sizeof(v4l2_frmsizeenum{}))
 	__p                    = unsafe.Pointer(uintptr(0))
 	NativeByteOrder        = getNativeByteOrder()
@@ -130,7 +132,7 @@ type v4l2_frmsize_stepwise struct {
 	Step_height uint32
 }
 
-//Hack to make go compiler properly align union
+// Hack to make go compiler properly align union
 type v4l2_format_aligned_union struct {
 	data [200 - unsafe.Sizeof(__p)]byte
 	_    unsafe.Pointer
@@ -487,6 +489,16 @@ func setControl(fd uintptr, id uint32, val int32) error {
 	ctrl.id = id
 	ctrl.value = val
 	return ioctl.Ioctl(fd, VIDIOC_S_CTRL, uintptr(unsafe.Pointer(ctrl)))
+}
+
+func getInput(fd uintptr) (index int32, err error) {
+	err = ioctl.Ioctl(fd, VIDIOC_G_INPUT, uintptr(unsafe.Pointer(&index)))
+	return
+}
+
+func selectInput(fd uintptr, index uint32) (err error) {
+	err = ioctl.Ioctl(fd, VIDIOC_S_INPUT, uintptr(unsafe.Pointer(&index)))
+	return
 }
 
 func getFramerate(fd uintptr) (float32, error) {
