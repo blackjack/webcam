@@ -61,7 +61,7 @@ func Open(path string) (*Webcam, error) {
 
 // Returns image formats supported by the device alongside with
 // their text description
-// Not that this function is somewhat experimental. Frames are not ordered in
+// Note that this function is somewhat experimental. Frames are not ordered in
 // any meaning, also duplicates can occur so it's up to developer to clean it up.
 // See http://linuxtv.org/downloads/v4l-dvb-apis/vidioc-enum-framesizes.html
 // for more information
@@ -94,6 +94,15 @@ func (w *Webcam) GetName() (string, error) {
 // GetBusInfo returns the location of the device in the system
 func (w *Webcam) GetBusInfo() (string, error) {
 	return getBusInfo(w.fd)
+  
+// SelectInput selects the current video input.
+func (w *Webcam) SelectInput(index uint32) error {
+	return selectInput(w.fd, index)
+}
+
+// GetInput queries the current video input.
+func (w *Webcam) GetInput() (int32, error) {
+	return getInput(w.fd)
 }
 
 // Returns supported frame sizes for a given image format
