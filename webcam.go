@@ -86,7 +86,7 @@ func (w *Webcam) GetSupportedFormats() map[PixelFormat]string {
 	return result
 }
 
-// Select the current video input
+// SelectInput selects the current video input.
 func (w *Webcam) SelectInput(index uint32) error {
 	return selectInput(w.fd, index)
 }
