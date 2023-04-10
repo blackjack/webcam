@@ -91,7 +91,7 @@ func (w *Webcam) SelectInput(index uint32) error {
 	return selectInput(w.fd, index)
 }
 
-// Query the current video input
+// GetInput queries the current video input.
 func (w *Webcam) GetInput() (int32, error) {
 	return getInput(w.fd)
 }
