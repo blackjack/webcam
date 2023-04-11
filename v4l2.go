@@ -315,7 +315,7 @@ func getFrameSize(fd uintptr, index uint32, code uint32) (frameSize FrameSize, e
 
 func getName(fd uintptr) (string, error) {
 	var caps v4l2_capability
-	if err := ioctl.Ioctl(fd, VIDIOC_QUERYCAP, uintptr(unsafe.Pointer(caps))); err != nil {
+	if err := ioctl.Ioctl(fd, VIDIOC_QUERYCAP, uintptr(unsafe.Pointer(&caps))); err != nil {
 		return "", err
 	}
 
@@ -324,7 +324,7 @@ func getName(fd uintptr) (string, error) {
 
 func getBusInfo(fd uintptr) (string, error) {
 	var caps v4l2_capability
-	if err := ioctl.Ioctl(fd, VIDIOC_QUERYCAP, uintptr(unsafe.Pointer(caps))); err != nil {
+	if err := ioctl.Ioctl(fd, VIDIOC_QUERYCAP, uintptr(unsafe.Pointer(&caps))); err != nil {
 		return "", err
 	}
 
