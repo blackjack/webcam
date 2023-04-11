@@ -94,7 +94,8 @@ func (w *Webcam) GetName() (string, error) {
 // GetBusInfo returns the location of the device in the system
 func (w *Webcam) GetBusInfo() (string, error) {
 	return getBusInfo(w.fd)
-  
+}
+
 // SelectInput selects the current video input.
 func (w *Webcam) SelectInput(index uint32) error {
 	return selectInput(w.fd, index)
