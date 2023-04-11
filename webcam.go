@@ -86,6 +86,15 @@ func (w *Webcam) GetSupportedFormats() map[PixelFormat]string {
 	return result
 }
 
+// GetName returns the human-readable name of the device
+func (w *Webcam) GetName() (string, error) {
+	return getName(w.fd)
+}
+
+// GetBusInfo returns the location of the device in the system
+func (w *Webcam) GetBusInfo() (string, error) {
+	return getBusInfo(w.fd)
+  
 // SelectInput selects the current video input.
 func (w *Webcam) SelectInput(index uint32) error {
 	return selectInput(w.fd, index)

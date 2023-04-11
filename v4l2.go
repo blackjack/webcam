@@ -313,6 +313,24 @@ func getFrameSize(fd uintptr, index uint32, code uint32) (frameSize FrameSize, e
 	return
 }
 
+func getName(fd uintptr) (string, error) {
+	var caps v4l2_capability
+	if err := ioctl.Ioctl(fd, VIDIOC_QUERYCAP, uintptr(unsafe.Pointer(caps))); err != nil {
+		return "", err
+	}
+
+	return CToGoString(caps.card[:]), nil
+}
+
+func getBusInfo(fd uintptr) (string, error) {
+	var caps v4l2_capability
+	if err := ioctl.Ioctl(fd, VIDIOC_QUERYCAP, uintptr(unsafe.Pointer(caps))); err != nil {
+		return "", err
+	}
+
+	return CToGoString(caps.bus_info[:]), nil
+}
+
 func setImageFormat(fd uintptr, formatcode *uint32, width *uint32, height *uint32) (err error) {
 
 	format := &v4l2_format{
