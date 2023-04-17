@@ -22,7 +22,9 @@ type FrameSize struct {
 	StepHeight uint32
 }
 
-// Represents framerate supported by a webcam
+// FrameRate represents a specific frame rate supported by a webcam.
+// For discrete framerates min and max values will be the same and
+// step value will be equal to '0'
 type FrameRate struct {
 	MinNumerator  uint32
 	MaxNumerator  uint32
