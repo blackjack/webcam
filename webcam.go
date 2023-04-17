@@ -133,6 +133,7 @@ func (w *Webcam) GetSupportedFramerates(fp PixelFormat, width uint32, height uin
 	var index uint32
 	var err error
 
+	// keep incrementing the index value until we get an EINVAL error
 	for index = 0; err == nil; index++ {
 		r, err := getFrameInterval(w.fd, index, uint32(fp), width, height)
 
