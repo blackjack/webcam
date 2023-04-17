@@ -139,6 +139,7 @@ type v4l2_frmsize_stepwise struct {
 	Step_height uint32
 }
 
+// https://www.kernel.org/doc/html/v4.9/media/uapi/v4l/vidioc-enum-frameintervals.html#c.v4l2_frmivalenum
 type v4l2_frmivalenum struct {
 	index        uint32
 	pixel_format uint32
@@ -149,6 +150,7 @@ type v4l2_frmivalenum struct {
 	reserved     [2]uint32
 }
 
+// https://www.kernel.org/doc/html/v4.9/media/uapi/v4l/vidioc-enum-frameintervals.html#c.v4l2_frmival_stepwise
 type v4l2_frmival_stepwise struct {
 	min  v4l2_fract
 	max  v4l2_fract
