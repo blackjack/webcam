@@ -128,20 +128,19 @@ func (w *Webcam) GetSupportedFrameSizes(f PixelFormat) []FrameSize {
 
 // GetSupportedFramerates returns supported frame rates for a given image format and frame size.
 func (w *Webcam) GetSupportedFramerates(fp PixelFormat, width uint32, height uint32) []FrameRate {
-	result := make([]FrameRate, 0)
-
+	var result []FrameRate
 	var index uint32
 	var err error
 
 	// keep incrementing the index value until we get an EINVAL error
-	for index = 0; err == nil; index++ {
+	index = 0
+	for err == nil {
 		r, err := getFrameInterval(w.fd, index, uint32(fp), width, height)
-
 		if err != nil {
 			break
 		}
-
 		result = append(result, r)
+		index++
 	}
 
 	return result
