@@ -22,9 +22,10 @@ type FrameSize struct {
 	StepHeight uint32
 }
 
-// FrameRate represents a specific frame rate supported by a webcam.
-// For discrete framerates min and max values will be the same and
-// step value will be equal to '0'
+// FrameRate represents all possible framerates supported by a webcam
+// for a given pixel format and frame size. For discrete returns min
+// and max values will be the same and step value will be equal to '0'
+// Stepwise returns are represented as a range of values with a step.
 type FrameRate struct {
 	MinNumerator  uint32
 	MaxNumerator  uint32
@@ -35,9 +36,8 @@ type FrameRate struct {
 	StepDenominator uint32
 }
 
-// Return string representation of framerate e.g.
-// 1/30 for discrete framerates and
-// [1-2;1]/[10-60;1] for stepwise framerates
+// Return string representation of FrameRate struct. e.g.1/30 for
+// discrete framerates and [1-2;1]/[10-60;1] for stepwise framerates.
 func (f FrameRate) String() string {
 	if f.StepNumerator == 0 && f.StepDenominator == 0 {
 		return fmt.Sprintf("%d/%d", f.MinNumerator, f.MinDenominator)
