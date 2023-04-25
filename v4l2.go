@@ -139,6 +139,8 @@ type v4l2_frmsize_stepwise struct {
 	Step_height uint32
 }
 
+// v4l2_frmivalenum that contains a pixel format and size and receives a
+// frame interval (time duration between frames of a video stream)
 // https://www.kernel.org/doc/html/v4.9/media/uapi/v4l/vidioc-enum-frameintervals.html#c.v4l2_frmivalenum
 type v4l2_frmivalenum struct {
 	index        uint32
@@ -150,11 +152,12 @@ type v4l2_frmivalenum struct {
 	reserved     [2]uint32
 }
 
+// v4l2_frmival_stepwise represents the frame interval in a stepwise manner
 // https://www.kernel.org/doc/html/v4.9/media/uapi/v4l/vidioc-enum-frameintervals.html#c.v4l2_frmival_stepwise
 type v4l2_frmival_stepwise struct {
-	min  v4l2_fract
-	max  v4l2_fract
-	step v4l2_fract
+	min  v4l2_fract // minimum frame interval [s]
+	max  v4l2_fract // maximum frame interval [s]
+	step v4l2_fract // frame interval step size [s]
 }
 
 // Hack to make go compiler properly align union
