@@ -10,6 +10,12 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+/*
+	V4L2 constants, enums, and structs are derived from the header file
+	'videodev2.h'. See the following reference for more information:
+	https://www.kernel.org/doc/html/latest/userspace-api/media/v4l/videodev.html#videodev2-h
+*/
+
 type controlType int
 
 const (
@@ -140,8 +146,7 @@ type v4l2_frmsize_stepwise struct {
 }
 
 // v4l2_frmivalenum that contains a pixel format and size and receives a
-// frame interval (time duration between frames of a video stream)
-// https://www.kernel.org/doc/html/v4.9/media/uapi/v4l/vidioc-enum-frameintervals.html#c.v4l2_frmivalenum
+// frame interval (time duration between frames of a video stream).
 type v4l2_frmivalenum struct {
 	index        uint32
 	pixel_format uint32
@@ -152,8 +157,8 @@ type v4l2_frmivalenum struct {
 	reserved     [2]uint32
 }
 
-// v4l2_frmival_stepwise represents the frame interval in a stepwise manner
-// https://www.kernel.org/doc/html/v4.9/media/uapi/v4l/vidioc-enum-frameintervals.html#c.v4l2_frmival_stepwise
+// v4l2_frmival_stepwise represents the frame interval range
+// as minimum, maximum, and step size intervals.
 type v4l2_frmival_stepwise struct {
 	min  v4l2_fract // minimum frame interval [s]
 	max  v4l2_fract // maximum frame interval [s]
