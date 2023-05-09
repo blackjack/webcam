@@ -28,6 +28,7 @@ type control struct {
 	id     uint32
 	name   string
 	c_type controlType
+	step   int32
 	min    int32
 	max    int32
 }
@@ -654,6 +655,7 @@ func queryControls(fd uintptr) []control {
 			c.name = CToGoString(query.name[:])
 			c.min = query.minimum
 			c.max = query.maximum
+			c.step = query.step
 			controls = append(controls, c)
 		}
 	}

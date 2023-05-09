@@ -35,6 +35,6 @@ func main() {
 	cmap := cam.GetControls()
 	fmt.Println("Available controls: ")
 	for id, c := range cmap {
-		fmt.Printf("ID:%08x %-32s  Min: %4d  Max: %5d\n", id, c.Name, c.Min, c.Max)
+		fmt.Printf("ID:%08x %-32s Type: %1d Min: %6d Max: %6d Step: %6d\n", id, c.Name, c.Type, c.Min, c.Max, c.Step)
 	}
 }

@@ -25,6 +25,8 @@ type Control struct {
 	Name string
 	Min  int32
 	Max  int32
+	Type int32
+	Step int32
 }
 
 // Open a webcam with a given path
@@ -179,7 +181,13 @@ func (w *Webcam) SetBufferCount(count uint32) error {
 func (w *Webcam) GetControls() map[ControlID]Control {
 	cmap := make(map[ControlID]Control)
 	for _, c := range queryControls(w.fd) {
-		cmap[ControlID(c.id)] = Control{c.name, c.min, c.max}
+		cmap[ControlID(c.id)] = Control{
+			Name: c.name,
+			Min:  c.min,
+			Max:  c.max,
+			Type: int32(c.c_type),
+			Step: c.step,
+		}
 	}
 	return cmap
 }
