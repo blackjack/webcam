@@ -17,6 +17,7 @@ type Webcam struct {
 	bufcount  uint32
 	buffers   [][]byte
 	streaming bool
+	pollFds   []unix.PollFd
 }
 
 type ControlID uint32
@@ -58,6 +59,7 @@ func Open(path string) (*Webcam, error) {
 	w := new(Webcam)
 	w.fd = fd
 	w.bufcount = 256
+	w.pollFds = []unix.PollFd{{Fd: int32(fd), Events: unix.POLLIN}}
 	return w, nil
 }
 
@@ -294,7 +296,7 @@ func (w *Webcam) ReleaseFrame(index uint32) error {
 // Wait until frame could be read
 func (w *Webcam) WaitForFrame(timeout uint32) error {
 
-	count, err := waitForFrame(w.fd, timeout)
+	count, err := waitForFrame(w.pollFds, timeout)
 
 	if count < 0 || err != nil {
 		return err

@@ -557,19 +557,9 @@ func stopStreaming(fd uintptr) (err error) {
 
 }
 
-func waitForFrame(fd uintptr, timeout uint32) (count int, err error) {
-
+func waitForFrame(pollFds []unix.PollFd, timeout uint32) (count int, err error) {
 	for {
-		fds := &unix.FdSet{}
-		fds.Set(int(fd))
-
-		var oneSecInNsec int64 = 1e9
-		timeoutNsec := int64(timeout) * oneSecInNsec
-		nativeTimeVal := unix.NsecToTimeval(timeoutNsec)
-		tv := &nativeTimeVal
-
-		count, err = unix.Select(int(fd+1), fds, nil, nil, tv)
-
+		count, err = unix.Poll(pollFds, int(timeout*1000))
 		if count < 0 && err == unix.EINTR {
 			continue
 		}
