@@ -499,7 +499,7 @@ func mmapQueryBuffer(fd uintptr, index uint32, length *uint32) (buffer []byte, e
 
 	*length = req.length
 
-	buffer, err = unix.Mmap(int(fd), int64(offset), int(req.length), unix.PROT_READ|unix.PROT_WRITE, unix.MAP_SHARED)
+	buffer, err = unix.Mmap(int(fd), int64(offset), int(req.length), unix.PROT_READ, unix.MAP_SHARED)
 	return
 }
 
