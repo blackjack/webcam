@@ -5,6 +5,7 @@ package webcam
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"unsafe"
 
@@ -35,12 +36,14 @@ type Control struct {
 // capable to stream video
 func Open(path string) (*Webcam, error) {
 
-	handle, err := unix.Open(path, unix.O_RDWR|unix.O_NONBLOCK, 0666)
-	fd := uintptr(handle)
-
-	if fd < 0 || err != nil {
+	handle, err := unix.Open(path, unix.O_RDONLY|unix.O_NONBLOCK, 0666)
+	if err != nil {
 		return nil, err
 	}
+	if handle < 0 {
+		return nil, fmt.Errorf("failed to open %v", path)
+	}
+	fd := uintptr(handle)
 
 	supportsVideoCapture, supportsVideoStreaming, err := checkCapabilities(fd)
 
