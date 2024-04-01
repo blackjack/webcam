@@ -34,15 +34,25 @@ type Control struct {
 // Open a webcam with a given path
 // Checks if device is a v4l2 device and if it is
 // capable to stream video
-func Open(path string) (*Webcam, error) {
+func Open(path string) (w *Webcam, err error) {
+	w = nil
+	err = nil
 
 	handle, err := unix.Open(path, unix.O_RDONLY|unix.O_NONBLOCK, 0666)
 	if err != nil {
-		return nil, err
+		return
 	}
 	if handle < 0 {
-		return nil, fmt.Errorf("failed to open %v", path)
+		err = fmt.Errorf("failed to open %v", path)
+		return
 	}
+	// At this point the handle is valid and must be return or closed
+	defer func() {
+		if err != nil {
+			// Since the handle is not returned on error we must close it or leak
+			unix.Close(handle)
+		}
+	}()
 	fd := uintptr(handle)
 
 	supportsVideoCapture, supportsVideoStreaming, err := checkCapabilities(fd)
@@ -52,18 +62,20 @@ func Open(path string) (*Webcam, error) {
 	}
 
 	if !supportsVideoCapture {
-		return nil, errors.New("Not a video capture device")
+		err = errors.New("Not a video capture device")
+		return
 	}
 
 	if !supportsVideoStreaming {
-		return nil, errors.New("Device does not support the streaming I/O method")
+		err = errors.New("Device does not support the streaming I/O method")
+		return
 	}
 
-	w := new(Webcam)
+	w = new(Webcam)
 	w.fd = fd
 	w.bufcount = 256
 	w.pollFds = []unix.PollFd{{Fd: int32(fd), Events: unix.POLLIN}}
-	return w, nil
+	return
 }
 
 // Returns image formats supported by the device alongside with
