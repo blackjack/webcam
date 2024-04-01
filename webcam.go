@@ -35,7 +35,6 @@ type Control struct {
 // Checks if device is a v4l2 device and if it is
 // capable to stream video
 func Open(path string) (*Webcam, error) {
-
 	handle, err := unix.Open(path, unix.O_RDONLY|unix.O_NONBLOCK, 0666)
 	if err != nil {
 		return nil, err
@@ -43,6 +42,14 @@ func Open(path string) (*Webcam, error) {
 	if handle < 0 {
 		return nil, fmt.Errorf("failed to open %v", path)
 	}
+	// At this point the handle is valid and must be return or closed
+	success := false // If this is not set true prior to function exit we assume error and close the handle
+	defer func() {
+		if !success {
+			// Since the handle is not returned on error we must close it or leak
+			unix.Close(handle)
+		}
+	}()
 	fd := uintptr(handle)
 
 	supportsVideoCapture, supportsVideoStreaming, err := checkCapabilities(fd)
@@ -63,6 +70,7 @@ func Open(path string) (*Webcam, error) {
 	w.fd = fd
 	w.bufcount = 256
 	w.pollFds = []unix.PollFd{{Fd: int32(fd), Events: unix.POLLIN}}
+	success = true
 	return w, nil
 }
 
