@@ -35,7 +35,7 @@ type Control struct {
 // Checks if device is a v4l2 device and if it is
 // capable to stream video
 func Open(path string) (*Webcam, error) {
-	handle, err := unix.Open(path, unix.O_RDONLY|unix.O_NONBLOCK, 0666)
+	handle, err := unix.Open(path, unix.O_RDWR|unix.O_NONBLOCK, 0666)
 	if err != nil {
 		return nil, err
 	}
