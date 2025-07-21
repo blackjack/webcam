@@ -244,6 +244,7 @@ func (w *Webcam) StartStreaming() error {
 		buffer, err := mmapQueryBuffer(w.fd, uint32(index), &length)
 
 		if err != nil {
+			w.cleanupBuffers()
 			return errors.New("Failed to map memory: " + string(err.Error()))
 		}
 
@@ -255,6 +256,7 @@ func (w *Webcam) StartStreaming() error {
 		err := mmapEnqueueBuffer(w.fd, uint32(index))
 
 		if err != nil {
+			w.cleanupBuffers()
 			return errors.New("Failed to enqueue buffer: " + string(err.Error()))
 		}
 
@@ -263,6 +265,7 @@ func (w *Webcam) StartStreaming() error {
 	err = startStreaming(w.fd)
 
 	if err != nil {
+		w.cleanupBuffers()
 		return errors.New("Failed to start streaming: " + string(err.Error()))
 	}
 	w.streaming = true
@@ -318,17 +321,18 @@ func (w *Webcam) WaitForFrame(timeout uint32) error {
 	}
 }
 
+func (w *Webcam) cleanupBuffers() {
+	for _, buffer := range w.buffers {
+		mmapReleaseBuffer(buffer)
+	}
+}
+
 func (w *Webcam) StopStreaming() error {
 	if !w.streaming {
 		return errors.New("Request to stop streaming when not streaming")
 	}
 	w.streaming = false
-	for _, buffer := range w.buffers {
-		err := mmapReleaseBuffer(buffer)
-		if err != nil {
-			return err
-		}
-	}
+	w.cleanupBuffers()
 
 	return stopStreaming(w.fd)
 }
