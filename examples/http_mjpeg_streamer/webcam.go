@@ -25,6 +25,13 @@ const (
 	V4L2_PIX_FMT_YUYV = 0x56595559
 )
 
+type serverConfig struct {
+	addr     string
+	tls      bool
+	certFile string
+	keyFile  string
+}
+
 type FrameSizes []webcam.FrameSize
 
 func (slice FrameSizes) Len() int {
@@ -55,7 +62,17 @@ func main() {
 	single := flag.Bool("m", false, "single image http mode, default mjpeg video")
 	addr := flag.String("l", ":8080", "addr to listien")
 	fps := flag.Bool("p", false, "print fps info")
+	tls := flag.Bool("t", false, "enable TLS")
+	certFile := flag.String("c", "webcam.crt", "certificate file for TLS")
+	keyFile := flag.String("k", "webcam.pem", "key file for TLS")
 	flag.Parse()
+
+	scfg := &serverConfig{
+		addr:     *addr,
+		tls:      *tls,
+		certFile: *certFile,
+		keyFile:  *keyFile,
+	}
 
 	cam, err := webcam.Open(*dev)
 	if err != nil {
@@ -141,9 +158,9 @@ FMT:
 	)
 	go encodeToImage(cam, back, fi, li, w, h, f)
 	if *single {
-		go httpImage(*addr, li)
+		go httpImage(scfg, li)
 	} else {
-		go httpVideo(*addr, li)
+		go httpVideo(scfg, li)
 	}
 
 	timeout := uint32(5) //5 seconds
@@ -248,7 +265,7 @@ func encodeToImage(wc *webcam.Webcam, back chan struct{}, fi chan []byte, li cha
 	}
 }
 
-func httpImage(addr string, li chan *bytes.Buffer) {
+func httpImage(scfg *serverConfig, li chan *bytes.Buffer) {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("connect from", r.RemoteAddr, r.URL)
 		if r.URL.Path != "/" {
@@ -270,10 +287,14 @@ func httpImage(addr string, li chan *bytes.Buffer) {
 
 	})
 
-	log.Fatal(http.ListenAndServe(addr, nil))
+	if scfg.tls {
+		log.Fatal(http.ListenAndServeTLS(scfg.addr, scfg.certFile, scfg.keyFile, nil))
+	} else {
+		log.Fatal(http.ListenAndServe(scfg.addr, nil))
+	}
 }
 
-func httpVideo(addr string, li chan *bytes.Buffer) {
+func httpVideo(scfg *serverConfig, li chan *bytes.Buffer) {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("connect from", r.RemoteAddr, r.URL)
 		if r.URL.Path != "/" {
@@ -306,5 +327,9 @@ func httpVideo(addr string, li chan *bytes.Buffer) {
 		}
 	})
 
-	log.Fatal(http.ListenAndServe(addr, nil))
+	if scfg.tls {
+		log.Fatal(http.ListenAndServeTLS(scfg.addr, scfg.certFile, scfg.keyFile, nil))
+	} else {
+		log.Fatal(http.ListenAndServe(scfg.addr, nil))
+	}
 }
