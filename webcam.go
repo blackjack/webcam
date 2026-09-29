@@ -35,7 +35,17 @@ type Control struct {
 // Checks if device is a v4l2 device and if it is
 // capable to stream video
 func Open(path string) (*Webcam, error) {
-	handle, err := unix.Open(path, unix.O_RDWR|unix.O_NONBLOCK, 0666)
+	return openWithFlags(path, unix.O_RDWR|unix.O_NONBLOCK)
+}
+
+// OpenCloexec is like Open but also sets O_CLOEXEC so the FD is not
+// inherited by subprocesses spawned via fork+exec.
+func OpenCloexec(path string) (*Webcam, error) {
+	return openWithFlags(path, unix.O_RDWR|unix.O_NONBLOCK|unix.O_CLOEXEC)
+}
+
+func openWithFlags(path string, flags int) (*Webcam, error) {
+	handle, err := unix.Open(path, flags, 0666)
 	if err != nil {
 		return nil, err
 	}
