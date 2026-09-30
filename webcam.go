@@ -38,9 +38,9 @@ func Open(path string) (*Webcam, error) {
 	return openWithFlags(path, unix.O_RDWR|unix.O_NONBLOCK)
 }
 
-// OpenCloexec is like Open but also sets O_CLOEXEC so the FD is not
+// OpenWithCloseOnExec is like Open but also sets O_CLOEXEC so the FD is not
 // inherited by subprocesses spawned via fork+exec.
-func OpenCloexec(path string) (*Webcam, error) {
+func OpenWithCloseOnExec(path string) (*Webcam, error) {
 	return openWithFlags(path, unix.O_RDWR|unix.O_NONBLOCK|unix.O_CLOEXEC)
 }
 
