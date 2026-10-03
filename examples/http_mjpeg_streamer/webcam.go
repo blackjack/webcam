@@ -22,6 +22,7 @@ import (
 
 const (
 	V4L2_PIX_FMT_PJPG = 0x47504A50
+	V4L2_PIX_FMT_MJPG = 0x47504A4D
 	V4L2_PIX_FMT_YUYV = 0x56595559
 )
 
@@ -31,14 +32,14 @@ func (slice FrameSizes) Len() int {
 	return len(slice)
 }
 
-//For sorting purposes
+// For sorting purposes
 func (slice FrameSizes) Less(i, j int) bool {
 	ls := slice[i].MaxWidth * slice[i].MaxHeight
 	rs := slice[j].MaxWidth * slice[j].MaxHeight
 	return ls < rs
 }
 
-//For sorting purposes
+// For sorting purposes
 func (slice FrameSizes) Swap(i, j int) {
 	slice[i], slice[j] = slice[j], slice[i]
 }
@@ -46,6 +47,7 @@ func (slice FrameSizes) Swap(i, j int) {
 var supportedFormats = map[webcam.PixelFormat]bool{
 	V4L2_PIX_FMT_PJPG: true,
 	V4L2_PIX_FMT_YUYV: true,
+	V4L2_PIX_FMT_MJPG: true,
 }
 
 func main() {
@@ -127,6 +129,11 @@ FMT:
 	}
 	fmt.Fprintf(os.Stderr, "Resulting image format: %s %dx%d\n", format_desc[f], w, h)
 
+	fmt.Println("Supported framerates for", format, size)
+	for _, rate := range cam.GetSupportedFramerates(format, uint32(size.MaxWidth), uint32(size.MaxHeight)) {
+		fmt.Println(rate)
+	}
+
 	// start streaming
 	err = cam.StartStreaming()
 	if err != nil {
@@ -146,7 +153,7 @@ FMT:
 		go httpVideo(*addr, li)
 	}
 
-	timeout := uint32(5) //5 seconds
+	timeout := uint32(5) // 5 seconds
 	start := time.Now()
 	var fr time.Duration
 
@@ -154,6 +161,7 @@ FMT:
 		err = cam.WaitForFrame(timeout)
 		if err != nil {
 			log.Println(err)
+			continue
 			return
 		}
 
@@ -197,7 +205,6 @@ func encodeToImage(wc *webcam.Webcam, back chan struct{}, fi chan []byte, li cha
 
 	var (
 		frame []byte
-		img   image.Image
 	)
 	for {
 		bframe := <-fi
@@ -207,6 +214,9 @@ func encodeToImage(wc *webcam.Webcam, back chan struct{}, fi chan []byte, li cha
 		}
 		copy(frame, bframe)
 		back <- struct{}{}
+
+		// buf holds frame as jpeg
+		buf := &bytes.Buffer{}
 
 		switch format {
 		case V4L2_PIX_FMT_YUYV:
@@ -219,15 +229,14 @@ func encodeToImage(wc *webcam.Webcam, back chan struct{}, fi chan []byte, li cha
 				yuyv.Cr[i] = frame[ii+3]
 
 			}
-			img = yuyv
+			if err := jpeg.Encode(buf, yuyv, nil); err != nil {
+				log.Fatal(err)
+				return
+			}
+		case V4L2_PIX_FMT_MJPG:
+			buf.Write(frame)
 		default:
 			log.Fatal("invalid format ?")
-		}
-		//convert to jpeg
-		buf := &bytes.Buffer{}
-		if err := jpeg.Encode(buf, img, nil); err != nil {
-			log.Fatal(err)
-			return
 		}
 
 		const N = 50
