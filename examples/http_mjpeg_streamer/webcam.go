@@ -1,5 +1,5 @@
 // Example program that uses blakjack/webcam library
-// for working with V4L2 devices.
+// for working with V4L2 devices and JPEG stream.
 package main
 
 import (
@@ -23,6 +23,7 @@ import (
 const (
 	V4L2_PIX_FMT_PJPG = 0x47504A50
 	V4L2_PIX_FMT_YUYV = 0x56595559
+	Motion_JPEG       = 1196444237
 )
 
 type FrameSizes []webcam.FrameSize
@@ -46,6 +47,7 @@ func (slice FrameSizes) Swap(i, j int) {
 var supportedFormats = map[webcam.PixelFormat]bool{
 	V4L2_PIX_FMT_PJPG: true,
 	V4L2_PIX_FMT_YUYV: true,
+	Motion_JPEG:       true,
 }
 
 func main() {
@@ -70,7 +72,6 @@ func main() {
 	for _, s := range format_desc {
 		fmt.Fprintln(os.Stderr, s)
 	}
-
 	var format webcam.PixelFormat
 FMT:
 	for f, s := range format_desc {
@@ -220,9 +221,16 @@ func encodeToImage(wc *webcam.Webcam, back chan struct{}, fi chan []byte, li cha
 
 			}
 			img = yuyv
+		case Motion_JPEG:
+			var err error
+			img, err = jpeg.Decode(bytes.NewBuffer(frame))
+			if err != nil {
+				log.Fatal("Error format jpeg: %v", err.Error)
+			}
 		default:
 			log.Fatal("invalid format ?")
 		}
+
 		//convert to jpeg
 		buf := &bytes.Buffer{}
 		if err := jpeg.Encode(buf, img, nil); err != nil {
