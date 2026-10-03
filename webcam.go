@@ -18,6 +18,7 @@ type Webcam struct {
 	bufcount  uint32
 	buffers   [][]byte
 	streaming bool
+	closed    bool
 	pollFds   []unix.PollFd
 }
 
@@ -343,13 +344,19 @@ func (w *Webcam) StopStreaming() error {
 	return stopStreaming(w.fd)
 }
 
-// Close the device
+// Close the device. Calling Close more than once returns nil; the
+// underlying file descriptor is only released on the first call so
+// the kernel can't hand it to unrelated code in the meantime.
 func (w *Webcam) Close() error {
+	if w.closed {
+		return nil
+	}
 	if w.streaming {
 		w.StopStreaming()
 	}
 
 	err := unix.Close(int(w.fd))
+	w.closed = true
 
 	return err
 }
